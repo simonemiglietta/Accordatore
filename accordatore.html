@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Accordatore Chitarra</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; padding: 1rem; }
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 1rem; color: #1a1a1a; }
+
+  .tunings-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+  .tuning-btn { font-size: 12px; padding: 5px 10px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tuning-btn.active { background: #e8e8e4; border-color: #888; font-weight: 500; }
+
+  .strings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+  .string-btn { padding: 10px 4px; border-radius: 10px; border: 0.5px solid #ddd; background: #fff; color: #1a1a1a; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
+  .string-btn .note { font-size: 20px; font-weight: 500; }
+  .string-btn .freq { font-size: 11px; color: #888; margin-top: 2px; }
+  .string-btn.selected { border: 2px solid #378ADD; background: #E6F1FB; color: #0C447C; }
+  .string-btn.selected .freq { color: #185FA5; }
+
+  .meter-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; text-align: center; }
+  .detected-note { font-size: 48px; font-weight: 500; line-height: 1; color: #1a1a1a; }
+  .detected-freq { font-size: 13px; color: #888; margin-top: 4px; margin-bottom: 14px; }
+
+  svg.gauge { width: 100%; height: 90px; }
+  .cents-label { font-size: 14px; margin-top: 10px; color: #888; min-height: 22px; }
+  .cents-label.in-tune { color: #2d7a2d; font-weight: 500; }
+  .cents-label.sharp { color: #c0392b; }
+  .cents-label.flat { color: #185FA5; }
+
+  .start-btn { width: 100%; padding: 14px; border-radius: 10px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 15px; cursor: pointer; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; -webkit-tap-highlight-color: transparent; }
+  .start-btn.active { background: #EAF3DE; border-color: #639922; color: #2d6e11; font-weight: 500; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; flex-shrink: 0; }
+  .dot.on { background: #1D9E75; }
+
+  .custom-section { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; }
+  .custom-title { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .custom-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+  .custom-inputs input { width: 100%; font-size: 14px; text-align: center; padding: 7px 4px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; }
+  .apply-btn { width: 100%; padding: 9px; border-radius: 8px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 13px; cursor: pointer; }
+</style>
+</head>
+<body>
+<h1>🎸 Accordatore</h1>
+<div class="tunings-row" id="tunings-row"></div>
+<div class="strings-grid" id="strings-grid"></div>
+
+<div class="meter-card">
+  <div class="detected-note" id="detected-note">—</div>
+  <div class="detected-freq" id="detected-freq">0.0 Hz</div>
+  <svg class="gauge" viewBox="0 0 300 90" xmlns="http://www.w3.org/2000/svg">
+    <path d="M 30 85 A 120 120 0 0 1 270 85" fill="none" stroke="#ddd" stroke-width="6" stroke-linecap="round"/>
+    <path d="M 30 85 A 120 120 0 0 1 150 85" fill="none" stroke="#9FE1CB" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+    <path d="M 150 85 A 120 120 0 0 1 270 85" fill="none" stroke="#F5C4B3" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+    <rect x="146" y="20" width="8" height="40" rx="4" fill="#1D9E75" opacity="0.3"/>
+    <line id="needle" x1="150" y1="85" x2="150" y2="20" stroke="#378ADD" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="150" cy="85" r="5" fill="#378ADD"/>
+    <text x="26" y="82" font-size="10" fill="#aaa" text-anchor="middle">−50</text>
+    <text x="274" y="82" font-size="10" fill="#aaa" text-anchor="middle">+50</text>
+    <text x="150" y="12" font-size="10" fill="#aaa" text-anchor="middle">0</text>
+  </svg>
+  <div class="cents-label" id="cents-label">seleziona una corda e avvia</div>
+</div>
+
+<button class="start-btn" id="start-btn">
+  <span class="dot" id="dot"></span><span id="btn-label">Avvia microfono</span>
+</button>
+
+<div class="custom-section">
+  <div class="custom-title">Accordatura personalizzata (es. E2, G#3, Bb4)</div>
+  <div class="custom-inputs" id="custom-inputs"></div>
+  <button class="apply-btn" id="apply-btn">Applica accordatura custom</button>
+</div>
+
+<script>
+const TUNINGS = {
+  "Standard": ["E2","A2","D3","G3","B3","E4"],
+  "Drop D":   ["D2","A2","D3","G3","B3","E4"],
+  "Open G":   ["D2","G2","D3","G3","B3","D4"],
+  "DADGAD":   ["D2","A2","D3","G3","A3","D4"],
+  "Open E":   ["E2","B2","E3","G#3","B3","E4"],
+};
+const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
+const STRING_LABELS = ["6ª","5ª","4ª","3ª","2ª","1ª"];
+
+function noteToFreq(note) {
+  const m = note.match(/^([A-G]#?)(\d)$/);
+  if (!m) return null;
+  const n = NOTE_NAMES.indexOf(m[1]);
+  if (n < 0) return null;
+  const midi = (parseInt(m[2]) + 1) * 12 + n;
+  return 440 * Math.pow(2, (midi - 69) / 12);
+}
+
+function freqToNote(freq) {
+  if (freq <= 0) return { name: "—", cents: 0 };
+  const midi = 12 * Math.log2(freq / 440) + 69;
+  const midiR = Math.round(midi);
+  const cents = Math.round((midi - midiR) * 100);
+  const n = ((midiR % 12) + 12) % 12;
+  const oct = Math.floor(midiR / 12) - 1;
+  return { name: NOTE_NAMES[n] + oct, cents };
+}
+
+let tunings = JSON.parse(JSON.stringify(TUNINGS));
+let currentTuning = "Standard";
+let selectedString = 0;
+let audioCtx = null, analyser = null, rafId = null, micStream = null, listening = false;
+
+const tuningsRow = document.getElementById("tunings-row");
+const stringsGrid = document.getElementById("strings-grid");
+const detectedNote = document.getElementById("detected-note");
+const detectedFreq = document.getElementById("detected-freq");
+const needle = document.getElementById("needle");
+const centsLabel = document.getElementById("cents-label");
+const startBtn = document.getElementById("start-btn");
+const dot = document.getElementById("dot");
+const btnLabel = document.getElementById("btn-label");
+const customInputsDiv = document.getElementById("custom-inputs");
+const applyBtn = document.getElementById("apply-btn");
+
+function buildTuningBtns() {
+  tuningsRow.innerHTML = "";
+  Object.keys(tunings).forEach(name => {
+    const b = document.createElement("button");
+    b.className = "tuning-btn" + (name === currentTuning ? " active" : "");
+    b.textContent = name;
+    b.onclick = () => { currentTuning = name; selectedString = 0; buildTuningBtns(); buildStringBtns(); buildCustomInputs(); };
+    tuningsRow.appendChild(b);
+  });
+}
+
+function buildStringBtns() {
+  stringsGrid.innerHTML = "";
+  tunings[currentTuning].forEach((note, i) => {
+    const freq = noteToFreq(note);
+    const b = document.createElement("button");
+    b.className = "string-btn" + (i === selectedString ? " selected" : "");
+    b.innerHTML = `<div class="note">${note}</div><div class="freq">${STRING_LABELS[i]} — ${freq ? freq.toFixed(1) : "?"}Hz</div>`;
+    b.onclick = () => { selectedString = i; buildStringBtns(); };
+    stringsGrid.appendChild(b);
+  });
+}
+
+function buildCustomInputs() {
+  customInputsDiv.innerHTML = "";
+  tunings[currentTuning].forEach((note, i) => {
+    const inp = document.createElement("input");
+    inp.value = note;
+    inp.placeholder = "es. E2";
+    inp.dataset.idx = i;
+    customInputsDiv.appendChild(inp);
+  });
+}
+
+applyBtn.onclick = () => {
+  const inputs = customInputsDiv.querySelectorAll("input");
+  const newNotes = Array.from(inputs).map(i => i.value.trim());
+  if (newNotes.some(n => noteToFreq(n) === null)) { alert("Nota non valida! Usa formato tipo E2, G#3…"); return; }
+  tunings["Custom"] = newNotes;
+  currentTuning = "Custom";
+  selectedString = 0;
+  buildTuningBtns(); buildStringBtns(); buildCustomInputs();
+};
+
+function setNeedle(cents) {
+  const clamped = Math.max(-50, Math.min(50, cents));
+  const angle = (clamped / 50) * 75;
+  const rad = (angle - 90) * Math.PI / 180;
+  const x2 = 150 + 65 * Math.cos(rad);
+  const y2 = 85 + 65 * Math.sin(rad);
+  needle.setAttribute("x2", x2.toFixed(1));
+  needle.setAttribute("y2", y2.toFixed(1));
+}
+
+function autoCorrelate(buf, sampleRate) {
+  const SIZE = buf.length;
+  let rms = 0;
+  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
+  rms = Math.sqrt(rms / SIZE);
+  if (rms < 0.01) return -1;
+  let r1 = 0, r2 = SIZE - 1;
+  for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < 0.2) { r1 = i; break; }
+  for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < 0.2) { r2 = SIZE - i; break; }
+  buf = buf.slice(r1, r2);
+  const newSize = buf.length;
+  const c = new Array(newSize).fill(0);
+  for (let i = 0; i < newSize; i++)
+    for (let j = 0; j < newSize - i; j++)
+      c[i] += buf[j] * buf[j + i];
+  let d = 0;
+  while (c[d] > c[d + 1]) d++;
+  let maxval = -1, maxpos = -1;
+  for (let i = d; i < newSize; i++) if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
+  let T0 = maxpos;
+  const x1 = c[T0 - 1], x2c = c[T0], x3 = c[T0 + 1];
+  const a = (x1 + x3 - 2 * x2c) / 2, b2 = (x3 - x1) / 2;
+  if (a) T0 = T0 - b2 / (2 * a);
+  return sampleRate / T0;
+}
+
+function update() {
+  if (!analyser) return;
+  const buf = new Float32Array(analyser.fftSize);
+  analyser.getFloatTimeDomainData(buf);
+  const freq = autoCorrelate(buf, audioCtx.sampleRate);
+  if (freq > 60 && freq < 1400) {
+    const { name, cents } = freqToNote(freq);
+    detectedNote.textContent = name;
+    detectedFreq.textContent = freq.toFixed(1) + " Hz";
+    setNeedle(cents);
+    const targetFreq = noteToFreq(tunings[currentTuning][selectedString]);
+    if (targetFreq) {
+      const diff = Math.round(1200 * Math.log2(freq / targetFreq));
+      if (Math.abs(diff) <= 5) {
+        centsLabel.textContent = "✓ In accordo!";
+        centsLabel.className = "cents-label in-tune";
+      } else if (diff > 5) {
+        centsLabel.textContent = `+${diff} cents — abbassa`;
+        centsLabel.className = "cents-label sharp";
+      } else {
+        centsLabel.textContent = `${diff} cents — alza`;
+        centsLabel.className = "cents-label flat";
+      }
+    }
+  }
+  rafId = requestAnimationFrame(update);
+}
+
+startBtn.onclick = async () => {
+  if (listening) {
+    listening = false;
+    if (rafId) cancelAnimationFrame(rafId);
+    if (micStream) micStream.getTracks().forEach(t => t.stop());
+    if (audioCtx) audioCtx.close();
+    analyser = audioCtx = micStream = null;
+    dot.className = "dot"; btnLabel.textContent = "Avvia microfono";
+    startBtn.className = "start-btn";
+    centsLabel.textContent = "seleziona una corda e avvia";
+    centsLabel.className = "cents-label";
+    detectedNote.textContent = "—"; detectedFreq.textContent = "0.0 Hz";
+    setNeedle(0); return;
+  }
+  try {
+    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 2048;
+    audioCtx.createMediaStreamSource(micStream).connect(analyser);
+    listening = true;
+    dot.className = "dot on"; btnLabel.textContent = "Ferma microfono";
+    startBtn.className = "start-btn active";
+    update();
+  } catch(e) {
+    alert("Impossibile accedere al microfono:\n" + e.message);
+  }
+};
+
+buildTuningBtns(); buildStringBtns(); buildCustomInputs();
+</script>
+</body>
+</html>
