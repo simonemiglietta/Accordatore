@@ -91,6 +91,23 @@
   .metro-beat.accent.lit { background: #0F6E56 !important; }
   .metro-muted-note { font-size: 11px; color: #c0392b; text-align: center; margin-top: 6px; min-height: 16px; }
 
+
+  /* ── BPM Trainer ── */
+  .trainer-card { background: #f0f0ec; border: 0.5px solid #e0e0d8; border-radius: 10px; padding: 0.875rem; margin-top: 8px; }
+  .trainer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .trainer-title { font-size: 13px; color: #888; }
+  .trainer-toggle { padding: 6px 14px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .trainer-toggle.on { background: #fdecea; border-color: #e57368; color: #c0392b; font-weight: 500; }
+  .trainer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .trainer-row:last-child { margin-bottom: 0; }
+  .trainer-row input[type=range] { flex: 1; }
+  .trainer-lbl { font-size: 12px; color: #888; white-space: nowrap; min-width: 68px; }
+  .trainer-val { font-size: 13px; font-weight: 500; min-width: 40px; text-align: right; }
+  .trainer-step-row { display: flex; align-items: center; gap: 0; margin-bottom: 10px; }
+  .trainer-step-lbl { font-size: 12px; color: #888; min-width: 68px; }
+  .step-btn { width: 36px; height: 36px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; -webkit-tap-highlight-color: transparent; }
+  .step-val-box { font-size: 16px; font-weight: 500; min-width: 48px; text-align: center; }
+  .trainer-status { font-size: 12px; color: #185FA5; text-align: center; min-height: 18px; margin-top: 6px; font-weight: 500; }
   /* ── Custom ── */
   .custom-section { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; }
   .custom-title { font-size: 13px; color: #888; margin-bottom: 8px; }
@@ -197,6 +214,29 @@
     </div>
     <div class="metro-beats" id="metro-beats"></div>
     <div class="metro-muted-note" id="metro-muted-note"></div>
+    <div class="trainer-card">
+      <div class="trainer-header">
+        <span class="trainer-title">Accelerazione automatica</span>
+        <button class="trainer-toggle" id="trainer-toggle" onclick="trainerToggle()">Start</button>
+      </div>
+      <div class="trainer-row">
+        <span class="trainer-lbl">Periodo</span>
+        <input type="range" id="trainer-period" min="1" max="32" step="1" value="4" oninput="trainerPeriodChange(this.value)">
+        <span class="trainer-val" id="trainer-period-val">4 bat</span>
+      </div>
+      <div class="trainer-step-row">
+        <span class="trainer-step-lbl">Scatto BPM</span>
+        <button class="step-btn" onclick="trainerStepAdj(-1)">−</button>
+        <span class="step-val-box" id="trainer-step-val">+2</span>
+        <button class="step-btn" onclick="trainerStepAdj(+1)">+</button>
+      </div>
+      <div class="trainer-row">
+        <span class="trainer-lbl">BPM target</span>
+        <input type="range" id="trainer-target" min="40" max="240" step="1" value="160" oninput="trainerTargetChange(this.value)">
+        <span class="trainer-val" id="trainer-target-val">160</span>
+      </div>
+      <div class="trainer-status" id="trainer-status"></div>
+    </div>
   </div>
 </div><!-- /tab-looper -->
 
@@ -797,7 +837,7 @@ function scheduleTick(time, beat) {
     osc.start(time); osc.stop(time + 0.05);
   }
   const delay = Math.max(0, (time - metroCtx.currentTime) * 1000);
-  setTimeout(() => flashBeat(beat), delay);
+  setTimeout(() => { flashBeat(beat); trainerOnBeat(); }, delay);
 }
 
 function flashBeat(beat) {
@@ -825,6 +865,90 @@ function metroToggle() {
     metroSchedule();
   }
 }
+
+// ════════════════════════════════════════════════
+//  BPM TRAINER
+// ════════════════════════════════════════════════
+let trainerRunning = false;
+let trainerStep = 2;          // BPM per scatto
+let trainerPeriod = 4;        // battute per scatto
+let trainerTarget = 160;
+let trainerBeatCount = 0;     // contatore battiti dall'ultimo scatto
+let trainerStartBpm = 120;
+
+const trainerToggleBtn  = document.getElementById("trainer-toggle");
+const trainerStepValEl  = document.getElementById("trainer-step-val");
+const trainerStatusEl   = document.getElementById("trainer-status");
+const trainerPeriodSlider = document.getElementById("trainer-period");
+const trainerTargetSlider = document.getElementById("trainer-target");
+
+function trainerPeriodChange(v) {
+  trainerPeriod = parseInt(v);
+  document.getElementById("trainer-period-val").textContent = v + " bat";
+}
+
+function trainerTargetChange(v) {
+  trainerTarget = parseInt(v);
+  document.getElementById("trainer-target-val").textContent = v;
+}
+
+function trainerStepAdj(delta) {
+  trainerStep = Math.max(1, Math.min(20, trainerStep + delta));
+  trainerStepValEl.textContent = (trainerStep > 0 ? "+" : "") + trainerStep;
+}
+
+function trainerToggle() {
+  if (trainerRunning) {
+    trainerRunning = false;
+    trainerToggleBtn.textContent = "Start";
+    trainerToggleBtn.className = "trainer-toggle";
+    trainerStatusEl.textContent = "";
+    trainerBeatCount = 0;
+  } else {
+    // Il metronomo deve essere acceso
+    if (!metroRunning) metroToggle();
+    trainerRunning = true;
+    trainerStartBpm = metroBpm;
+    trainerBeatCount = 0;
+    trainerToggleBtn.textContent = "Stop";
+    trainerToggleBtn.className = "trainer-toggle on";
+    trainerUpdateStatus();
+  }
+}
+
+function trainerUpdateStatus() {
+  if (!trainerRunning) return;
+  const remaining = trainerPeriod - (trainerBeatCount % trainerPeriod);
+  trainerStatusEl.textContent = metroBpm + " BPM → target " + trainerTarget + " | prossimo scatto in " + remaining + " bat";
+}
+
+// Agganciato al tick del metronomo — chiamato da scheduleTick su beat 0 di ogni misura
+// ma contiamo ogni singolo beat per granularità
+function trainerOnBeat() {
+  if (!trainerRunning) return;
+  trainerBeatCount++;
+  if (trainerBeatCount % trainerPeriod === 0) {
+    // Scatto
+    const dir = trainerStep >= 0 ? 1 : -1;
+    const newBpm = metroBpm + trainerStep;
+    if ((trainerStep > 0 && newBpm >= trainerTarget) || (trainerStep < 0 && newBpm <= trainerTarget)) {
+      // Raggiunto target
+      metroBpm = trainerTarget;
+      document.getElementById("metro-bpm").value = trainerTarget;
+      metroBpmValEl.textContent = trainerTarget;
+      trainerRunning = false;
+      trainerToggleBtn.textContent = "Start";
+      trainerToggleBtn.className = "trainer-toggle";
+      trainerStatusEl.textContent = "✓ Target " + trainerTarget + " BPM raggiunto!";
+      return;
+    }
+    metroBpm = Math.max(40, Math.min(240, newBpm));
+    document.getElementById("metro-bpm").value = metroBpm;
+    metroBpmValEl.textContent = metroBpm;
+  }
+  trainerUpdateStatus();
+}
+
 </script>
 </body>
 </html>
