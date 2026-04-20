@@ -503,7 +503,11 @@ function swapLoopBuffer(newBuf) {
 async function ensureLoopCtx() {
   if (loopCtx) return true;
   try {
-    loopStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    loopStream = await navigator.mediaDevices.getUserMedia({ audio: {
+    echoCancellation: false,
+    noiseSuppression: false,
+    autoGainControl: false
+  }});
     loopCtx = new (window.AudioContext || window.webkitAudioContext)();
     return true;
   } catch(e) { alert("Impossibile accedere al microfono:\n" + e.message); return false; }
