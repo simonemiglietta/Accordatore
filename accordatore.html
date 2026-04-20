@@ -7,81 +7,95 @@
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f5f5f0; color: #1a1a1a; min-height: 100vh; padding: 1rem; }
-  h1 { font-size: 18px; font-weight: 500; margin-bottom: 1rem; color: #1a1a1a; }
+  h1 { font-size: 18px; font-weight: 500; margin-bottom: 1rem; }
 
+  .tab-nav { display: flex; margin-bottom: 1rem; border: 0.5px solid #ddd; border-radius: 10px; overflow: hidden; background: #f0f0ec; }
+  .tab-btn { flex: 1; padding: 10px 4px; font-size: 13px; border: none; background: transparent; color: #888; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tab-btn.active { background: #fff; color: #1a1a1a; font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* ── Tuner ── */
   .tunings-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
   .tuning-btn { font-size: 12px; padding: 5px 10px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; cursor: pointer; -webkit-tap-highlight-color: transparent; }
   .tuning-btn.active { background: #e8e8e4; border-color: #888; font-weight: 500; }
-
   .strings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
   .string-btn { padding: 10px 4px; border-radius: 10px; border: 0.5px solid #ddd; background: #fff; color: #1a1a1a; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
   .string-btn .note { font-size: 20px; font-weight: 500; }
   .string-btn .freq { font-size: 11px; color: #888; margin-top: 2px; }
   .string-btn.selected { border: 2px solid #378ADD; background: #E6F1FB; color: #0C447C; }
   .string-btn.selected .freq { color: #185FA5; }
-
   .meter-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; text-align: center; }
-  .detected-note { font-size: 48px; font-weight: 500; line-height: 1; color: #1a1a1a; }
+  .detected-note { font-size: 48px; font-weight: 500; line-height: 1; }
   .detected-freq { font-size: 13px; color: #888; margin-top: 4px; margin-bottom: 14px; }
   svg.gauge { width: 100%; height: 90px; }
   .cents-label { font-size: 14px; margin-top: 10px; color: #888; min-height: 22px; }
   .cents-label.in-tune { color: #2d7a2d; font-weight: 500; }
   .cents-label.sharp { color: #c0392b; }
   .cents-label.flat { color: #185FA5; }
-
   .history-wrap { margin-top: 14px; }
   .history-label { font-size: 11px; color: #aaa; margin-bottom: 5px; text-align: left; }
   .history-bar { display: flex; gap: 3px; height: 20px; align-items: flex-end; }
   .history-bar .hbar { flex: 1; border-radius: 3px; min-height: 3px; }
-
   .controls-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
   .ctrl-row { display: flex; align-items: center; gap: 10px; }
   .ctrl-label { font-size: 13px; color: #888; white-space: nowrap; min-width: 80px; }
   .ctrl-row input[type=range] { flex: 1; }
   .ctrl-val { font-size: 13px; font-weight: 500; min-width: 32px; text-align: right; }
-
   .start-btn { width: 100%; padding: 14px; border-radius: 10px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 15px; cursor: pointer; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; -webkit-tap-highlight-color: transparent; }
   .start-btn.active { background: #EAF3DE; border-color: #639922; color: #2d6e11; font-weight: 500; }
   .dot { width: 10px; height: 10px; border-radius: 50%; background: #bbb; flex-shrink: 0; }
   .dot.on { background: #1D9E75; }
 
-  .custom-section { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; }
-  .custom-title { font-size: 13px; color: #888; margin-bottom: 8px; }
-  .custom-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
-  .custom-inputs input { width: 100%; font-size: 14px; text-align: center; padding: 7px 4px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; }
-  .apply-btn { width: 100%; padding: 9px; border-radius: 8px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 13px; cursor: pointer; }
-
-  /* Tab nav */
-  .tab-nav { display: flex; gap: 0; margin-bottom: 1rem; border: 0.5px solid #ddd; border-radius: 10px; overflow: hidden; background: #f0f0ec; }
-  .tab-btn { flex: 1; padding: 10px 4px; font-size: 13px; border: none; background: transparent; color: #888; cursor: pointer; -webkit-tap-highlight-color: transparent; }
-  .tab-btn.active { background: #fff; color: #1a1a1a; font-weight: 500; }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
-
-  /* Looper */
+  /* ── Looper ── */
   .looper-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
-  .looper-status { font-size: 13px; color: #888; text-align: center; margin-bottom: 14px; min-height: 20px; }
+  .looper-status { font-size: 13px; color: #888; text-align: center; margin-bottom: 10px; min-height: 20px; }
   .looper-status.recording { color: #c0392b; font-weight: 500; }
   .looper-status.playing { color: #2d7a2d; font-weight: 500; }
-
-  .looper-waveform { width: 100%; height: 60px; border-radius: 8px; background: #f5f5f0; border: 0.5px solid #eee; margin-bottom: 14px; display: block; }
-
+  .looper-status.processing { color: #888; font-style: italic; }
+  canvas.looper-waveform { width: 100%; height: 60px; border-radius: 8px; background: #f5f5f0; border: 0.5px solid #eee; margin-bottom: 10px; display: block; }
+  .loop-progress-wrap { height: 4px; border-radius: 2px; background: #eee; margin-bottom: 12px; overflow: hidden; }
+  .loop-progress-bar { height: 100%; width: 0%; background: #1D9E75; border-radius: 2px; }
   .looper-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
   .lbtn { padding: 14px 8px; border-radius: 10px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 14px; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; display: flex; flex-direction: column; align-items: center; gap: 4px; }
-  .lbtn span.licon { font-size: 22px; line-height: 1; }
-  .lbtn span.llabel { font-size: 11px; color: #888; }
+  .lbtn .licon { font-size: 22px; line-height: 1; }
+  .lbtn .llabel { font-size: 11px; color: #888; }
   .lbtn.rec-active { background: #fdecea; border-color: #e57368; color: #c0392b; }
   .lbtn.rec-active .llabel { color: #c0392b; }
   .lbtn.play-active { background: #EAF3DE; border-color: #639922; color: #2d6e11; }
   .lbtn.play-active .llabel { color: #2d6e11; }
   .lbtn:disabled { opacity: 0.35; pointer-events: none; }
+  .loop-ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .loop-ctrl-row input[type=range] { flex: 1; }
+  .loop-ctrl-label { font-size: 12px; color: #aaa; white-space: nowrap; min-width: 90px; }
+  .loop-ctrl-val { font-size: 12px; font-weight: 500; min-width: 40px; text-align: right; }
 
-  .looper-vol-row { display: flex; align-items: center; gap: 10px; }
-  .looper-vol-row input[type=range] { flex: 1; }
-  .looper-vol-label { font-size: 12px; color: #aaa; white-space: nowrap; }
+  /* ── Metronome ── */
+  .metro-card { background: #f5f5f0; border: 0.5px solid #eee; border-radius: 10px; padding: 0.875rem; margin-top: 4px; }
+  .metro-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .metro-title { font-size: 13px; color: #888; }
+  .metro-toggle { padding: 6px 14px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; font-size: 13px; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .metro-toggle.on { background: #EAF3DE; border-color: #639922; color: #2d6e11; font-weight: 500; }
+  .metro-bpm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .metro-bpm-row input[type=range] { flex: 1; }
+  .metro-bpm-val { font-size: 22px; font-weight: 500; min-width: 44px; text-align: right; }
+  .metro-bpm-unit { font-size: 11px; color: #aaa; }
+  .metro-sig-row { display: flex; gap: 6px; margin-bottom: 10px; }
+  .metro-sig-btn { flex: 1; padding: 6px 4px; border-radius: 8px; border: 0.5px solid #ddd; background: #fff; color: #888; font-size: 12px; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; }
+  .metro-sig-btn.active { background: #E6F1FB; border-color: #378ADD; color: #0C447C; font-weight: 500; }
+  .metro-beats { display: flex; gap: 6px; justify-content: center; }
+  .metro-beat { width: 16px; height: 16px; border-radius: 50%; background: #ddd; transition: background 0.05s; }
+  .metro-beat.accent { background: #bbb; }
+  .metro-beat.lit { background: #1D9E75 !important; }
+  .metro-beat.accent.lit { background: #0F6E56 !important; }
+  .metro-muted-note { font-size: 11px; color: #c0392b; text-align: center; margin-top: 6px; min-height: 16px; }
 
-  .loop-progress-wrap { height: 4px; border-radius: 2px; background: #eee; margin-bottom: 12px; overflow: hidden; }
-  .loop-progress-bar { height: 100%; width: 0%; background: #1D9E75; border-radius: 2px; transition: width 0.05s linear; }
+  /* ── Custom ── */
+  .custom-section { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; }
+  .custom-title { font-size: 13px; color: #888; margin-bottom: 8px; }
+  .custom-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
+  .custom-inputs input { width: 100%; font-size: 14px; text-align: center; padding: 7px 4px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; }
+  .apply-btn { width: 100%; padding: 9px; border-radius: 8px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 13px; cursor: pointer; }
 </style>
 </head>
 <body>
@@ -93,82 +107,120 @@
   <button class="tab-btn" onclick="switchTab('custom',this)">Custom</button>
 </div>
 
+<!-- ══ TAB ACCORDATORE ══ -->
 <div class="tab-panel active" id="tab-tuner">
-<div class="tunings-row" id="tunings-row"></div>
-<div class="strings-grid" id="strings-grid"></div>
-
-<div class="meter-card">
-  <div class="detected-note" id="detected-note">—</div>
-  <div class="detected-freq" id="detected-freq">0.0 Hz</div>
-  <svg class="gauge" viewBox="0 0 300 90" xmlns="http://www.w3.org/2000/svg">
-    <path d="M 30 85 A 120 120 0 0 1 270 85" fill="none" stroke="#ddd" stroke-width="6" stroke-linecap="round"/>
-    <path d="M 30 85 A 120 120 0 0 1 150 85" fill="none" stroke="#9FE1CB" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
-    <path d="M 150 85 A 120 120 0 0 1 270 85" fill="none" stroke="#F5C4B3" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
-    <rect x="146" y="20" width="8" height="40" rx="4" fill="#1D9E75" opacity="0.3"/>
-    <line id="needle" x1="150" y1="85" x2="150" y2="20" stroke="#378ADD" stroke-width="3" stroke-linecap="round"/>
-    <circle cx="150" cy="85" r="5" fill="#378ADD"/>
-    <text x="26" y="82" font-size="10" fill="#aaa" text-anchor="middle">−50</text>
-    <text x="274" y="82" font-size="10" fill="#aaa" text-anchor="middle">+50</text>
-    <text x="150" y="12" font-size="10" fill="#aaa" text-anchor="middle">0</text>
-  </svg>
-  <div class="cents-label" id="cents-label">seleziona una corda e avvia</div>
-  <div class="history-wrap">
-    <div class="history-label">Stabilità ultimi 2 sec</div>
-    <div class="history-bar" id="history-bar"></div>
+  <div class="tunings-row" id="tunings-row"></div>
+  <div class="strings-grid" id="strings-grid"></div>
+  <div class="meter-card">
+    <div class="detected-note" id="detected-note">—</div>
+    <div class="detected-freq" id="detected-freq">0.0 Hz</div>
+    <svg class="gauge" viewBox="0 0 300 90" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 30 85 A 120 120 0 0 1 270 85" fill="none" stroke="#ddd" stroke-width="6" stroke-linecap="round"/>
+      <path d="M 30 85 A 120 120 0 0 1 150 85" fill="none" stroke="#9FE1CB" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+      <path d="M 150 85 A 120 120 0 0 1 270 85" fill="none" stroke="#F5C4B3" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+      <rect x="146" y="20" width="8" height="40" rx="4" fill="#1D9E75" opacity="0.3"/>
+      <line id="needle" x1="150" y1="85" x2="150" y2="20" stroke="#378ADD" stroke-width="3" stroke-linecap="round"/>
+      <circle cx="150" cy="85" r="5" fill="#378ADD"/>
+      <text x="26" y="82" font-size="10" fill="#aaa" text-anchor="middle">−50</text>
+      <text x="274" y="82" font-size="10" fill="#aaa" text-anchor="middle">+50</text>
+      <text x="150" y="12" font-size="10" fill="#aaa" text-anchor="middle">0</text>
+    </svg>
+    <div class="cents-label" id="cents-label">seleziona una corda e avvia</div>
+    <div class="history-wrap">
+      <div class="history-label">Stabilità ultimi 2 sec</div>
+      <div class="history-bar" id="history-bar"></div>
+    </div>
   </div>
-</div>
-
-<div class="controls-card">
-  <div class="ctrl-row">
-    <span class="ctrl-label">Sensibilità</span>
-    <input type="range" id="sensitivity" min="1" max="10" step="1" value="5">
-    <span class="ctrl-val" id="sens-val">5</span>
+  <div class="controls-card">
+    <div class="ctrl-row">
+      <span class="ctrl-label">Sensibilità</span>
+      <input type="range" id="sensitivity" min="1" max="10" step="1" value="5" oninput="document.getElementById('sens-val').textContent=this.value">
+      <span class="ctrl-val" id="sens-val">5</span>
+    </div>
   </div>
-</div>
-
-<button class="start-btn" id="start-btn">
-  <span class="dot" id="dot"></span><span id="btn-label">Avvia microfono</span>
-</button>
+  <button class="start-btn" id="start-btn">
+    <span class="dot" id="dot"></span><span id="btn-label">Avvia microfono</span>
+  </button>
 </div><!-- /tab-tuner -->
 
-<!-- TAB: Looper -->
+<!-- ══ TAB LOOPER ══ -->
 <div class="tab-panel" id="tab-looper">
-<div class="looper-card">
-  <div class="looper-status" id="looper-status">Premi REC per iniziare</div>
-  <canvas class="looper-waveform" id="looper-waveform"></canvas>
-  <div class="loop-progress-wrap"><div class="loop-progress-bar" id="loop-progress"></div></div>
-  <div class="looper-btns">
-    <button class="lbtn" id="lbtn-rec" onclick="looperRec()">
-      <span class="licon">⏺</span><span class="llabel">REC</span>
-    </button>
-    <button class="lbtn" id="lbtn-play" onclick="looperPlay()" disabled>
-      <span class="licon">▶</span><span class="llabel">PLAY / LOOP</span>
-    </button>
-    <button class="lbtn" id="lbtn-stop" onclick="looperStop()" disabled>
-      <span class="licon">⏹</span><span class="llabel">STOP</span>
-    </button>
-    <button class="lbtn" id="lbtn-clear" onclick="looperClear()" disabled>
-      <span class="licon">🗑</span><span class="llabel">CANCELLA</span>
-    </button>
+  <div class="looper-card">
+    <div class="looper-status" id="looper-status">Premi REC per iniziare</div>
+    <canvas class="looper-waveform" id="looper-waveform"></canvas>
+    <div class="loop-progress-wrap"><div class="loop-progress-bar" id="loop-progress"></div></div>
+
+    <div class="looper-btns">
+      <button class="lbtn" id="lbtn-rec" onclick="looperRec()">
+        <span class="licon">⏺</span><span class="llabel">REC</span>
+      </button>
+      <button class="lbtn" id="lbtn-play" onclick="looperPlay()" disabled>
+        <span class="licon">▶</span><span class="llabel">PLAY / LOOP</span>
+      </button>
+      <button class="lbtn" id="lbtn-stop" onclick="looperStop()" disabled>
+        <span class="licon">⏹</span><span class="llabel">STOP</span>
+      </button>
+      <button class="lbtn" id="lbtn-clear" onclick="looperClear()" disabled>
+        <span class="licon">🗑</span><span class="llabel">CANCELLA</span>
+      </button>
+    </div>
+
+    <div class="loop-ctrl-row">
+      <span class="loop-ctrl-label">Volume loop</span>
+      <input type="range" id="loop-vol" min="0" max="100" step="1" value="80" oninput="setLoopVol(this.value)">
+      <span class="loop-ctrl-val" id="loop-vol-val">80%</span>
+    </div>
+    <div class="loop-ctrl-row">
+      <span class="loop-ctrl-label">Velocità</span>
+      <input type="range" id="loop-speed" min="25" max="100" step="1" value="100" oninput="setLoopSpeed(this.value)" disabled>
+      <span class="loop-ctrl-val" id="loop-speed-val">100%</span>
+    </div>
   </div>
-  <div class="looper-vol-row">
-    <span class="looper-vol-label">Volume loop</span>
-    <input type="range" id="loop-vol" min="0" max="100" step="1" value="80" oninput="setLoopVol(this.value)">
-    <span class="looper-vol-label" id="loop-vol-val">80%</span>
+
+  <div class="metro-card">
+    <div class="metro-header">
+      <span class="metro-title">Metronomo</span>
+      <button class="metro-toggle" id="metro-toggle" onclick="metroToggle()">Start</button>
+    </div>
+    <div class="metro-bpm-row">
+      <input type="range" id="metro-bpm" min="40" max="240" step="1" value="120" oninput="metroBpmChange(this.value)">
+      <span class="metro-bpm-val" id="metro-bpm-val">120</span>
+      <span class="metro-bpm-unit">BPM</span>
+    </div>
+    <div class="metro-sig-row">
+      <button class="metro-sig-btn" onclick="metroSig(2,this)">2/4</button>
+      <button class="metro-sig-btn" onclick="metroSig(3,this)">3/4</button>
+      <button class="metro-sig-btn active" onclick="metroSig(4,this)">4/4</button>
+      <button class="metro-sig-btn" onclick="metroSig(6,this)">6/8</button>
+    </div>
+    <div class="metro-beats" id="metro-beats"></div>
+    <div class="metro-muted-note" id="metro-muted-note"></div>
   </div>
-</div>
 </div><!-- /tab-looper -->
 
-<!-- TAB: Custom -->
+<!-- ══ TAB CUSTOM ══ -->
 <div class="tab-panel" id="tab-custom">
-<div class="custom-section">
-  <div class="custom-title">Accordatura personalizzata (es. E2, G#3, Bb4)</div>
-  <div class="custom-inputs" id="custom-inputs"></div>
-  <button class="apply-btn" id="apply-btn">Applica accordatura custom</button>
-</div>
+  <div class="custom-section">
+    <div class="custom-title">Accordatura personalizzata (es. E2, G#3, Bb4)</div>
+    <div class="custom-inputs" id="custom-inputs"></div>
+    <button class="apply-btn" id="apply-btn">Applica accordatura custom</button>
+  </div>
 </div><!-- /tab-custom -->
 
 <script>
+// ════════════════════════════════════════════════
+//  SHARED
+// ════════════════════════════════════════════════
+function switchTab(id, btn) {
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("tab-" + id).classList.add("active");
+  btn.classList.add("active");
+}
+
+// ════════════════════════════════════════════════
+//  TUNER
+// ════════════════════════════════════════════════
 const TUNINGS = {
   "Standard": ["E2","A2","D3","G3","B3","E4"],
   "Drop D":   ["D2","A2","D3","G3","B3","E4"],
@@ -185,60 +237,45 @@ function noteToFreq(note) {
   if (!m) return null;
   const n = NOTE_NAMES.indexOf(m[1]);
   if (n < 0) return null;
-  const midi = (parseInt(m[2]) + 1) * 12 + n;
-  return 440 * Math.pow(2, (midi - 69) / 12);
+  return 440 * Math.pow(2, ((parseInt(m[2]) + 1) * 12 + n - 69) / 12);
 }
 
 function freqToNote(freq) {
   if (freq <= 0) return { name: "—", cents: 0 };
   const midi = 12 * Math.log2(freq / 440) + 69;
   const midiR = Math.round(midi);
-  const cents = Math.round((midi - midiR) * 100);
-  const n = ((midiR % 12) + 12) % 12;
-  const oct = Math.floor(midiR / 12) - 1;
-  return { name: NOTE_NAMES[n] + oct, cents };
+  return {
+    name: NOTE_NAMES[((midiR % 12) + 12) % 12] + (Math.floor(midiR / 12) - 1),
+    cents: Math.round((midi - midiR) * 100)
+  };
 }
 
 let tunings = JSON.parse(JSON.stringify(TUNINGS));
-let currentTuning = "Standard";
-let selectedString = 0;
-let audioCtx = null, analyser = null, rafId = null, micStream = null, listening = false;
-let centsHistory = [];
-let lastHistoryTime = 0;
+let currentTuning = "Standard", selectedString = 0;
+let tunerCtx = null, analyser = null, tunerRaf = null, micStream = null, tunerOn = false;
+let centsHistory = [], lastHistoryTime = 0;
 
-const tuningsRow = document.getElementById("tunings-row");
-const stringsGrid = document.getElementById("strings-grid");
+const tuningsRow   = document.getElementById("tunings-row");
+const stringsGrid  = document.getElementById("strings-grid");
 const detectedNote = document.getElementById("detected-note");
 const detectedFreq = document.getElementById("detected-freq");
-const needle = document.getElementById("needle");
-const centsLabel = document.getElementById("cents-label");
-const startBtn = document.getElementById("start-btn");
-const dot = document.getElementById("dot");
-const btnLabel = document.getElementById("btn-label");
-const customInputsDiv = document.getElementById("custom-inputs");
-const applyBtn = document.getElementById("apply-btn");
-const historyBar = document.getElementById("history-bar");
+const needle       = document.getElementById("needle");
+const centsLabel   = document.getElementById("cents-label");
+const startBtn     = document.getElementById("start-btn");
+const dotEl        = document.getElementById("dot");
+const btnLabel     = document.getElementById("btn-label");
+const historyBar   = document.getElementById("history-bar");
 const sensitivitySlider = document.getElementById("sensitivity");
-const sensVal = document.getElementById("sens-val");
 
-// Crea barre storia
 for (let i = 0; i < HISTORY_SIZE; i++) {
-  const b = document.createElement("div");
-  b.className = "hbar";
-  b.style.background = "#eee";
-  b.style.height = "3px";
-  historyBar.appendChild(b);
+  const b = document.createElement("div"); b.className = "hbar";
+  b.style.cssText = "background:#eee;height:3px"; historyBar.appendChild(b);
 }
 
-sensitivitySlider.oninput = () => { sensVal.textContent = sensitivitySlider.value; };
+function getRmsThreshold() { return 0.055 - (parseInt(sensitivitySlider.value) - 1) * 0.005; }
 
-function getRmsThreshold() {
-  const s = parseInt(sensitivitySlider.value);
-  return 0.055 - (s - 1) * 0.005;
-}
-
-function updateHistory(diffCents, inTune) {
-  centsHistory.push({ diffCents, inTune });
+function updateHistory(diff, inTune) {
+  centsHistory.push({ diff, inTune });
   if (centsHistory.length > HISTORY_SIZE) centsHistory.shift();
   const bars = historyBar.querySelectorAll(".hbar");
   const offset = HISTORY_SIZE - centsHistory.length;
@@ -246,9 +283,8 @@ function updateHistory(diffCents, inTune) {
     const idx = i - offset;
     if (idx < 0) { bar.style.height = "3px"; bar.style.background = "#eee"; return; }
     const e = centsHistory[idx];
-    const h = 3 + (Math.min(Math.abs(e.diffCents), 50) / 50) * 17;
-    bar.style.height = h.toFixed(1) + "px";
-    bar.style.background = e.inTune ? "#1D9E75" : (e.diffCents > 0 ? "#E57368" : "#378ADD");
+    bar.style.height = (3 + (Math.min(Math.abs(e.diff), 50) / 50) * 17).toFixed(1) + "px";
+    bar.style.background = e.inTune ? "#1D9E75" : (e.diff > 0 ? "#E57368" : "#378ADD");
   });
 }
 
@@ -281,149 +317,131 @@ function buildStringBtns() {
 }
 
 function buildCustomInputs() {
-  customInputsDiv.innerHTML = "";
+  const div = document.getElementById("custom-inputs"); div.innerHTML = "";
   tunings[currentTuning].forEach((note, i) => {
     const inp = document.createElement("input");
     inp.value = note; inp.placeholder = "es. E2"; inp.dataset.idx = i;
-    customInputsDiv.appendChild(inp);
+    div.appendChild(inp);
   });
 }
 
-applyBtn.onclick = () => {
-  const inputs = customInputsDiv.querySelectorAll("input");
+document.getElementById("apply-btn").onclick = () => {
+  const inputs = document.getElementById("custom-inputs").querySelectorAll("input");
   const newNotes = Array.from(inputs).map(i => i.value.trim());
-  if (newNotes.some(n => noteToFreq(n) === null)) { alert("Nota non valida! Usa formato tipo E2, G#3…"); return; }
+  if (newNotes.some(n => noteToFreq(n) === null)) { alert("Nota non valida! Es. E2, G#3…"); return; }
   tunings["Custom"] = newNotes;
   currentTuning = "Custom"; selectedString = 0;
   buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory();
 };
 
 function setNeedle(cents) {
-  const clamped = Math.max(-50, Math.min(50, cents));
-  const rad = ((clamped / 50) * 75 - 90) * Math.PI / 180;
+  const rad = ((Math.max(-50, Math.min(50, cents)) / 50) * 75 - 90) * Math.PI / 180;
   needle.setAttribute("x2", (150 + 65 * Math.cos(rad)).toFixed(1));
   needle.setAttribute("y2", (85 + 65 * Math.sin(rad)).toFixed(1));
 }
 
-function autoCorrelate(buf, sampleRate, rmsThresh) {
+function autoCorrelate(buf, sr) {
   const SIZE = buf.length;
   let rms = 0;
   for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < rmsThresh) return -1;
+  if (rms < getRmsThreshold()) return -1;
   let r1 = 0, r2 = SIZE - 1;
   for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < 0.2) { r1 = i; break; }
   for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < 0.2) { r2 = SIZE - i; break; }
   buf = buf.slice(r1, r2);
-  const newSize = buf.length;
-  const c = new Array(newSize).fill(0);
-  for (let i = 0; i < newSize; i++)
-    for (let j = 0; j < newSize - i; j++)
-      c[i] += buf[j] * buf[j + i];
-  let d = 0;
-  while (c[d] > c[d + 1]) d++;
-  let maxval = -1, maxpos = -1;
-  for (let i = d; i < newSize; i++) if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
-  let T0 = maxpos;
-  const x1 = c[T0-1], x2c = c[T0], x3 = c[T0+1];
-  const a = (x1 + x3 - 2*x2c)/2, b2 = (x3-x1)/2;
-  if (a) T0 = T0 - b2/(2*a);
-  return sampleRate / T0;
+  const n = buf.length, c = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) for (let j = 0; j < n - i; j++) c[i] += buf[j] * buf[j + i];
+  let d = 0; while (c[d] > c[d + 1]) d++;
+  let mx = -1, mp = -1;
+  for (let i = d; i < n; i++) if (c[i] > mx) { mx = c[i]; mp = i; }
+  const x1 = c[mp-1], x2 = c[mp], x3 = c[mp+1];
+  const a = (x1 + x3 - 2*x2)/2, b2 = (x3-x1)/2;
+  let T0 = mp; if (a) T0 -= b2/(2*a);
+  return sr / T0;
 }
 
-function update(timestamp) {
+function tunerUpdate(ts) {
   if (!analyser) return;
-  rafId = requestAnimationFrame(update);
+  tunerRaf = requestAnimationFrame(tunerUpdate);
   const buf = new Float32Array(analyser.fftSize);
   analyser.getFloatTimeDomainData(buf);
-  const freq = autoCorrelate(buf, audioCtx.sampleRate, getRmsThreshold());
+  const freq = autoCorrelate(buf, tunerCtx.sampleRate);
   if (freq > 60 && freq < 1400) {
     const { name, cents } = freqToNote(freq);
     detectedNote.textContent = name;
     detectedFreq.textContent = freq.toFixed(1) + " Hz";
     setNeedle(cents);
-    const targetFreq = noteToFreq(tunings[currentTuning][selectedString]);
+    const tf = noteToFreq(tunings[currentTuning][selectedString]);
     let inTune = false, diff = cents;
-    if (targetFreq) {
-      diff = Math.round(1200 * Math.log2(freq / targetFreq));
-      if (Math.abs(diff) <= 5) {
-        centsLabel.textContent = "✓ In accordo!"; centsLabel.className = "cents-label in-tune"; inTune = true;
-      } else if (diff > 5) {
-        centsLabel.textContent = `+${diff} cents — abbassa`; centsLabel.className = "cents-label sharp";
-      } else {
-        centsLabel.textContent = `${diff} cents — alza`; centsLabel.className = "cents-label flat";
-      }
+    if (tf) {
+      diff = Math.round(1200 * Math.log2(freq / tf));
+      if (Math.abs(diff) <= 5) { centsLabel.textContent = "✓ In accordo!"; centsLabel.className = "cents-label in-tune"; inTune = true; }
+      else if (diff > 5) { centsLabel.textContent = `+${diff} cents — abbassa`; centsLabel.className = "cents-label sharp"; }
+      else { centsLabel.textContent = `${diff} cents — alza`; centsLabel.className = "cents-label flat"; }
     }
-    if (!lastHistoryTime || timestamp - lastHistoryTime > 100) {
-      lastHistoryTime = timestamp;
-      updateHistory(diff, inTune);
-    }
+    if (!lastHistoryTime || ts - lastHistoryTime > 100) { lastHistoryTime = ts; updateHistory(diff, inTune); }
   }
 }
 
 startBtn.onclick = async () => {
-  if (listening) {
-    listening = false;
-    if (rafId) cancelAnimationFrame(rafId);
+  if (tunerOn) {
+    tunerOn = false;
+    if (tunerRaf) cancelAnimationFrame(tunerRaf);
     if (micStream) micStream.getTracks().forEach(t => t.stop());
-    if (audioCtx) audioCtx.close();
-    analyser = audioCtx = micStream = null;
-    dot.className = "dot"; btnLabel.textContent = "Avvia microfono";
-    startBtn.className = "start-btn";
+    if (tunerCtx) tunerCtx.close();
+    analyser = tunerCtx = micStream = null;
+    dotEl.className = "dot"; btnLabel.textContent = "Avvia microfono"; startBtn.className = "start-btn";
     centsLabel.textContent = "seleziona una corda e avvia"; centsLabel.className = "cents-label";
-    detectedNote.textContent = "—"; detectedFreq.textContent = "0.0 Hz";
-    setNeedle(0); resetHistory(); return;
+    detectedNote.textContent = "—"; detectedFreq.textContent = "0.0 Hz"; setNeedle(0); resetHistory();
+    return;
   }
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioCtx.createAnalyser();
-    analyser.fftSize = 2048;
-    audioCtx.createMediaStreamSource(micStream).connect(analyser);
-    listening = true;
-    dot.className = "dot on"; btnLabel.textContent = "Ferma microfono";
-    startBtn.className = "start-btn active";
-    requestAnimationFrame(update);
+    tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
+    analyser = tunerCtx.createAnalyser(); analyser.fftSize = 2048;
+    tunerCtx.createMediaStreamSource(micStream).connect(analyser);
+    tunerOn = true;
+    dotEl.className = "dot on"; btnLabel.textContent = "Ferma microfono"; startBtn.className = "start-btn active";
+    requestAnimationFrame(tunerUpdate);
   } catch(e) { alert("Impossibile accedere al microfono:\n" + e.message); }
 };
 
 buildTuningBtns(); buildStringBtns(); buildCustomInputs();
 
-// ── Tab switching ──────────────────────────────────────────
-function switchTab(id, btn) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("tab-" + id).classList.add("active");
-  btn.classList.add("active");
-}
-
-// ── Looper ────────────────────────────────────────────────
-let loopCtx = null;
-let loopStream = null;
-let mediaRecorder = null;
-let recordedChunks = [];
-let loopBuffer = null;
-let loopSource = null;
-let loopGain = null;
-let loopState = "idle"; // idle | recording | playing
-let loopStartTime = 0;
-let loopDuration = 0;
+// ════════════════════════════════════════════════
+//  LOOPER
+// ════════════════════════════════════════════════
+let loopCtx = null, loopStream = null;
+let mediaRecorder = null, recordedChunks = [];
+let loopBuffer = null;          // AudioBuffer (processed, at original speed)
+let loopStretchedBuffer = null; // AudioBuffer (WSOLA output at current speed)
+let loopSource = null, loopGain = null;
+let loopState = "idle";
+let loopStartTime = 0, loopDuration = 0;
 let loopAnimRaf = null;
+let loopSpeed = 1.0;
 
-const looperStatus = document.getElementById("looper-status");
-const lbtnRec = document.getElementById("lbtn-rec");
-const lbtnPlay = document.getElementById("lbtn-play");
-const lbtnStop = document.getElementById("lbtn-stop");
-const lbtnClear = document.getElementById("lbtn-clear");
-const loopProgress = document.getElementById("loop-progress");
+const looperStatus  = document.getElementById("looper-status");
+const lbtnRec       = document.getElementById("lbtn-rec");
+const lbtnPlay      = document.getElementById("lbtn-play");
+const lbtnStop      = document.getElementById("lbtn-stop");
+const lbtnClear     = document.getElementById("lbtn-clear");
+const loopProgress  = document.getElementById("loop-progress");
 const loopVolSlider = document.getElementById("loop-vol");
-const loopVolVal = document.getElementById("loop-vol-val");
-const loopCanvas = document.getElementById("looper-waveform");
-const loopCtx2d = loopCanvas.getContext("2d");
+const loopVolVal    = document.getElementById("loop-vol-val");
+const loopSpeedSlider = document.getElementById("loop-speed");
+const loopSpeedVal  = document.getElementById("loop-speed-val");
+const loopCanvas    = document.getElementById("looper-waveform");
+const loopCtx2d     = loopCanvas.getContext("2d");
 
-function setLoopVol(v) {
-  loopVolVal.textContent = v + "%";
-  if (loopGain) loopGain.gain.value = v / 100;
+function setLoopVol(v) { loopVolVal.textContent = v + "%"; if (loopGain) loopGain.gain.value = v / 100; }
+
+function setLoopSpeed(v) {
+  loopSpeed = parseInt(v) / 100;
+  loopSpeedVal.textContent = v + "%";
+  // If already playing, restart with new speed
+  if (loopState === "playing") { looperStop(); looperPlay(); }
 }
 
 async function ensureLoopCtx() {
@@ -432,70 +450,110 @@ async function ensureLoopCtx() {
     loopStream = await navigator.mediaDevices.getUserMedia({ audio: true });
     loopCtx = new (window.AudioContext || window.webkitAudioContext)();
     return true;
-  } catch(e) {
-    alert("Impossibile accedere al microfono:\n" + e.message);
-    return false;
-  }
+  } catch(e) { alert("Impossibile accedere al microfono:\n" + e.message); return false; }
 }
 
-// ── Trim silence + crossfade ──────────────────────────────
+// ── Trim silence + crossfade ──────────────────
 function trimAndCrossfade(buffer) {
-  const sr = buffer.sampleRate;
-  const ch = buffer.numberOfChannels;
+  const sr = buffer.sampleRate, ch = buffer.numberOfChannels;
   const data = [];
   for (let i = 0; i < ch; i++) data.push(buffer.getChannelData(i));
-
-  const SILENCE_THRESH = 0.02;
-  const FRAME = 256;
-  const len = data[0].length;
-
-  // Find start: first frame where RMS > threshold
-  let startSample = 0;
+  const THRESH = 0.02, FRAME = 256, len = data[0].length;
+  let startS = 0, endS = len;
   for (let i = 0; i < len - FRAME; i += FRAME) {
-    let rms = 0;
-    for (let j = 0; j < FRAME; j++) rms += data[0][i+j] ** 2;
-    if (Math.sqrt(rms / FRAME) > SILENCE_THRESH) { startSample = Math.max(0, i - FRAME); break; }
+    let rms = 0; for (let j = 0; j < FRAME; j++) rms += data[0][i+j]**2;
+    if (Math.sqrt(rms/FRAME) > THRESH) { startS = Math.max(0, i - FRAME); break; }
   }
-
-  // Find end: last frame where RMS > threshold
-  let endSample = len;
-  for (let i = len - FRAME; i > startSample; i -= FRAME) {
-    let rms = 0;
-    for (let j = 0; j < FRAME; j++) rms += data[0][i+j] ** 2;
-    if (Math.sqrt(rms / FRAME) > SILENCE_THRESH) { endSample = Math.min(len, i + FRAME * 2); break; }
+  for (let i = len - FRAME; i > startS; i -= FRAME) {
+    let rms = 0; for (let j = 0; j < FRAME; j++) rms += data[0][i+j]**2;
+    if (Math.sqrt(rms/FRAME) > THRESH) { endS = Math.min(len, i + FRAME*2); break; }
   }
-
-  const trimLen = endSample - startSample;
-  if (trimLen < sr * 0.1) return buffer; // too short after trim, return as-is
-
-  // Crossfade length: 30ms or 10% of loop, whichever is shorter
-  const xfadeLen = Math.min(Math.floor(sr * 0.03), Math.floor(trimLen * 0.1));
-
-  // Output buffer = trimmed length (crossfade folds tail into head, same length)
+  const trimLen = endS - startS;
+  if (trimLen < sr * 0.1) return buffer;
+  const xfLen = Math.min(Math.floor(sr * 0.03), Math.floor(trimLen * 0.1));
   const out = loopCtx.createBuffer(ch, trimLen, sr);
+  for (let c2 = 0; c2 < ch; c2++) {
+    const src = data[c2], dst = out.getChannelData(c2);
+    for (let i = 0; i < trimLen; i++) dst[i] = src[startS + i];
+    for (let i = 0; i < xfLen; i++) {
+      const t = i / xfLen;
+      dst[i] = dst[i] * t + dst[trimLen - xfLen + i] * (1 - t);
+    }
+    for (let i = trimLen - xfLen; i < trimLen; i++) {
+      dst[i] = dst[i] * (1 - (i - (trimLen - xfLen)) / xfLen);
+    }
+  }
+  return out;
+}
+
+// ── WSOLA time-stretch (pitch-preserving) ─────
+// Returns a new AudioBuffer stretched to targetRate (0.25–1.0)
+function wsola(buffer, rate) {
+  if (Math.abs(rate - 1.0) < 0.01) return buffer;
+
+  const sr = buffer.sampleRate;
+  const ch = buffer.numberOfChannels;
+  const inLen = buffer.length;
+  const outLen = Math.round(inLen / rate);
+
+  // Parameters tuned for guitar (200ms frames, 25ms hop)
+  const frameSize = Math.round(sr * 0.08);   // 80ms analysis frame
+  const hopOut    = Math.round(sr * 0.02);   // 20ms output hop
+  const hopIn     = Math.round(hopOut * rate); // scaled input hop
+
+  const outBuf = loopCtx.createBuffer(ch, outLen, sr);
 
   for (let c2 = 0; c2 < ch; c2++) {
-    const src = data[c2];
-    const dst = out.getChannelData(c2);
+    const inp = buffer.getChannelData(c2);
+    const out = outBuf.getChannelData(c2);
+    // Hann window
+    const win = new Float32Array(frameSize);
+    for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2*Math.PI*i/(frameSize-1)));
 
-    // Copy trimmed region
-    for (let i = 0; i < trimLen; i++) dst[i] = src[startSample + i];
+    let inPos = 0;   // read cursor in input
+    let outPos = 0;  // write cursor in output
 
-    // Crossfade: fade out head, mix tail into it
-    for (let i = 0; i < xfadeLen; i++) {
-      const t = i / xfadeLen;                     // 0→1
-      const tailIdx = trimLen - xfadeLen + i;
-      // head: fade in from 0, tail: fade out to 0
-      dst[i] = dst[i] * t + dst[tailIdx] * (1 - t);
+    while (outPos + frameSize < outLen && inPos + frameSize < inLen) {
+      // Find best match near inPos via cross-correlation in a search window
+      const searchRadius = Math.round(hopIn * 0.5);
+      const searchStart = Math.max(0, inPos - searchRadius);
+      const searchEnd   = Math.min(inLen - frameSize, inPos + searchRadius);
+
+      let bestOffset = inPos;
+      let bestCorr = -Infinity;
+
+      // Reference: frame at previous inPos (already written region mapped back)
+      // Use the last written output frame as reference
+      const refStart = Math.max(0, outPos - hopOut);
+      const refLen   = Math.min(frameSize, outPos - refStart);
+
+      if (refLen > 16) {
+        for (let s = searchStart; s <= searchEnd; s += 4) { // stride 4 for speed
+          let corr = 0;
+          for (let k = 0; k < refLen; k++) corr += out[refStart + k] * (inp[s + k] || 0);
+          if (corr > bestCorr) { bestCorr = corr; bestOffset = s; }
+        }
+      } else {
+        bestOffset = inPos;
+      }
+
+      // OLA: add windowed frame at bestOffset into output at outPos
+      for (let k = 0; k < frameSize && outPos + k < outLen && bestOffset + k < inLen; k++) {
+        out[outPos + k] += inp[bestOffset + k] * win[k];
+      }
+
+      inPos  = bestOffset + hopIn;
+      outPos += hopOut;
     }
-    // Zero out the tail region that was folded in (optional but clean)
-    for (let i = trimLen - xfadeLen; i < trimLen; i++) {
-      const t = (i - (trimLen - xfadeLen)) / xfadeLen;
-      dst[i] = dst[i] * (1 - t);
-    }
+
+    // Normalize to remove OLA gain artifacts
+    // Find peak
+    let peak = 0;
+    for (let i = 0; i < outLen; i++) if (Math.abs(out[i]) > peak) peak = Math.abs(out[i]);
+    if (peak > 0.01) { const scale = Math.min(1.0, 0.95 / peak); for (let i = 0; i < outLen; i++) out[i] *= scale; }
   }
 
-  return out;
+  return outBuf;
 }
 
 async function looperRec() {
@@ -503,57 +561,51 @@ async function looperRec() {
   if (loopState === "playing") looperStop();
   if (!await ensureLoopCtx()) return;
 
-  recordedChunks = [];
-  loopBuffer = null;
-  drawWaveform(null);
-  loopProgress.style.width = "0%";
+  // Auto-mute metronomo
+  metroMuteForRec(true);
+
+  recordedChunks = []; loopBuffer = null; loopStretchedBuffer = null;
+  drawWaveform(null); loopProgress.style.width = "0%";
 
   mediaRecorder = new MediaRecorder(loopStream);
   mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
   mediaRecorder.onstop = async () => {
+    metroMuteForRec(false);
+    looperStatus.textContent = "Elaborazione…"; looperStatus.className = "looper-status processing";
     const blob = new Blob(recordedChunks, { type: "audio/webm" });
-    const arrayBuf = await blob.arrayBuffer();
-    const raw = await loopCtx.decodeAudioData(arrayBuf);
+    const raw = await loopCtx.decodeAudioData(await blob.arrayBuffer());
     loopBuffer = trimAndCrossfade(raw);
-    loopDuration = loopBuffer.duration;
+    loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
+    loopDuration = loopStretchedBuffer.duration;
     drawWaveform(loopBuffer);
-    looperStatus.textContent = `Sample pronto — ${loopDuration.toFixed(2)}s`;
+    looperStatus.textContent = `Sample pronto — ${loopBuffer.duration.toFixed(2)}s`;
     looperStatus.className = "looper-status";
-    lbtnPlay.disabled = false;
-    lbtnClear.disabled = false;
-    lbtnRec.classList.remove("rec-active");
+    lbtnPlay.disabled = false; lbtnClear.disabled = false; lbtnRec.classList.remove("rec-active");
+    loopSpeedSlider.disabled = false;
   };
 
   mediaRecorder.start();
   loopState = "recording";
-  looperStatus.textContent = "● Registrazione in corso…";
-  looperStatus.className = "looper-status recording";
-  lbtnRec.classList.add("rec-active");
-  lbtnStop.disabled = false;
-  lbtnPlay.disabled = true;
+  looperStatus.textContent = "● Registrazione in corso…"; looperStatus.className = "looper-status recording";
+  lbtnRec.classList.add("rec-active"); lbtnStop.disabled = false; lbtnPlay.disabled = true;
 }
 
 function looperPlay() {
-  if (!loopBuffer || loopState === "recording") return;
+  if (!loopStretchedBuffer || loopState === "recording") return;
   if (loopState === "playing") { looperStop(); return; }
 
   loopSource = loopCtx.createBufferSource();
-  loopSource.buffer = loopBuffer;
+  loopSource.buffer = loopStretchedBuffer;
   loopSource.loop = true;
   loopGain = loopCtx.createGain();
   loopGain.gain.value = parseInt(loopVolSlider.value) / 100;
-  loopSource.connect(loopGain);
-  loopGain.connect(loopCtx.destination);
+  loopSource.connect(loopGain); loopGain.connect(loopCtx.destination);
   loopSource.start();
-  loopStartTime = loopCtx.currentTime;
+  loopStartTime = loopCtx.currentTime; loopDuration = loopStretchedBuffer.duration;
   loopState = "playing";
-
-  looperStatus.textContent = "▶ Loop in riproduzione";
-  looperStatus.className = "looper-status playing";
-  lbtnPlay.classList.add("play-active");
-  lbtnPlay.querySelector(".licon").textContent = "⏸";
+  looperStatus.textContent = `▶ Loop — ${Math.round(loopSpeed*100)}%`; looperStatus.className = "looper-status playing";
+  lbtnPlay.classList.add("play-active"); lbtnPlay.querySelector(".licon").textContent = "⏸";
   lbtnStop.disabled = false;
-
   animateProgress();
 }
 
@@ -561,26 +613,21 @@ function looperStop() {
   if (loopSource) { try { loopSource.stop(); } catch(e) {} loopSource = null; }
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
   if (loopAnimRaf) { cancelAnimationFrame(loopAnimRaf); loopAnimRaf = null; }
-  loopState = loopBuffer ? "idle" : "idle";
-  loopProgress.style.width = "0%";
-  looperStatus.textContent = loopBuffer ? `Sample pronto — ${loopDuration.toFixed(2)}s` : "Premi REC per iniziare";
+  loopState = "idle"; loopProgress.style.width = "0%";
+  looperStatus.textContent = loopBuffer ? `Sample pronto — ${loopBuffer.duration.toFixed(2)}s` : "Premi REC per iniziare";
   looperStatus.className = "looper-status";
-  lbtnPlay.classList.remove("play-active");
-  lbtnPlay.querySelector(".licon").textContent = "▶";
-  lbtnRec.classList.remove("rec-active");
-  lbtnStop.disabled = true;
+  lbtnPlay.classList.remove("play-active"); lbtnPlay.querySelector(".licon").textContent = "▶";
+  lbtnRec.classList.remove("rec-active"); lbtnStop.disabled = true;
   if (loopBuffer) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
 }
 
 function looperClear() {
   looperStop();
-  loopBuffer = null; loopDuration = 0;
+  loopBuffer = null; loopStretchedBuffer = null; loopDuration = 0;
+  loopSpeedSlider.value = 100; loopSpeedVal.textContent = "100%"; loopSpeed = 1.0; loopSpeedSlider.disabled = true;
   drawWaveform(null);
-  looperStatus.textContent = "Premi REC per iniziare";
-  looperStatus.className = "looper-status";
-  lbtnPlay.disabled = true;
-  lbtnClear.disabled = true;
-  lbtnStop.disabled = true;
+  looperStatus.textContent = "Premi REC per iniziare"; looperStatus.className = "looper-status";
+  lbtnPlay.disabled = true; lbtnClear.disabled = true; lbtnStop.disabled = true;
 }
 
 function animateProgress() {
@@ -591,40 +638,114 @@ function animateProgress() {
 }
 
 function drawWaveform(buffer) {
-  const w = loopCanvas.offsetWidth || 300;
-  const h = loopCanvas.offsetHeight || 60;
+  const w = loopCanvas.offsetWidth || 300, h = 60;
   loopCanvas.width = w; loopCanvas.height = h;
-  loopCtx2d.clearRect(0, 0, w, h);
+  loopCtx2d.fillStyle = "#f5f5f0"; loopCtx2d.fillRect(0, 0, w, h);
   if (!buffer) {
-    loopCtx2d.fillStyle = "#f5f5f0";
-    loopCtx2d.fillRect(0, 0, w, h);
-    loopCtx2d.strokeStyle = "#ddd";
-    loopCtx2d.lineWidth = 1;
+    loopCtx2d.strokeStyle = "#ddd"; loopCtx2d.lineWidth = 1;
     loopCtx2d.beginPath(); loopCtx2d.moveTo(0, h/2); loopCtx2d.lineTo(w, h/2); loopCtx2d.stroke();
     return;
   }
-  const data = buffer.getChannelData(0);
-  const step = Math.ceil(data.length / w);
-  loopCtx2d.fillStyle = "#f5f5f0";
-  loopCtx2d.fillRect(0, 0, w, h);
-  loopCtx2d.strokeStyle = "#378ADD";
-  loopCtx2d.lineWidth = 1.5;
-  loopCtx2d.beginPath();
+  const data = buffer.getChannelData(0), step = Math.ceil(data.length / w);
+  loopCtx2d.strokeStyle = "#378ADD"; loopCtx2d.lineWidth = 1.5; loopCtx2d.beginPath();
   for (let i = 0; i < w; i++) {
-    let min = 1, max = -1;
-    for (let j = 0; j < step; j++) {
-      const v = data[i * step + j] || 0;
-      if (v < min) min = v; if (v > max) max = v;
-    }
-    const y1 = ((1 + min) / 2) * h;
-    const y2 = ((1 + max) / 2) * h;
-    if (i === 0) loopCtx2d.moveTo(i, y1); else loopCtx2d.lineTo(i, y1);
-    loopCtx2d.lineTo(i, y2);
+    let mn = 1, mx = -1;
+    for (let j = 0; j < step; j++) { const v = data[i*step+j]||0; if(v<mn)mn=v; if(v>mx)mx=v; }
+    const y1 = ((1+mn)/2)*h, y2 = ((1+mx)/2)*h;
+    if (i===0) loopCtx2d.moveTo(i,y1); else loopCtx2d.lineTo(i,y1);
+    loopCtx2d.lineTo(i,y2);
   }
   loopCtx2d.stroke();
 }
 
 drawWaveform(null);
+
+// ════════════════════════════════════════════════
+//  METRONOME
+// ════════════════════════════════════════════════
+let metroBpm = 120, metroBeats = 4;
+let metroRunning = false, metroMuted = false;
+let metroNextTime = 0, metroCurBeat = 0, metroSchedulerId = null;
+let metroCtx = null;
+
+const metroToggleBtn = document.getElementById("metro-toggle");
+const metroBpmValEl  = document.getElementById("metro-bpm-val");
+const metroBeatsEl   = document.getElementById("metro-beats");
+const metroMutedNote = document.getElementById("metro-muted-note");
+
+function buildMetroBeats() {
+  metroBeatsEl.innerHTML = "";
+  for (let i = 0; i < metroBeats; i++) {
+    const d = document.createElement("div");
+    d.className = "metro-beat" + (i===0?" accent":"");
+    metroBeatsEl.appendChild(d);
+  }
+}
+buildMetroBeats();
+
+function metroBpmChange(v) { metroBpm = parseInt(v); metroBpmValEl.textContent = metroBpm; }
+
+function metroSig(beats, btn) {
+  document.querySelectorAll(".metro-sig-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active"); metroBeats = beats; metroCurBeat = 0; buildMetroBeats();
+}
+
+function ensureMetroCtx() {
+  if (!metroCtx) metroCtx = loopCtx || new (window.AudioContext || window.webkitAudioContext)();
+  if (metroCtx.state === "suspended") metroCtx.resume();
+}
+
+function metroSchedule() {
+  if (!metroRunning) return;
+  ensureMetroCtx();
+  const interval = 60 / metroBpm;
+  while (metroNextTime < metroCtx.currentTime + 0.1) {
+    scheduleTick(metroNextTime, metroCurBeat);
+    metroNextTime += interval;
+    metroCurBeat = (metroCurBeat + 1) % metroBeats;
+  }
+  metroSchedulerId = setTimeout(metroSchedule, 25);
+}
+
+function scheduleTick(time, beat) {
+  const isAccent = beat === 0;
+  if (!metroMuted) {
+    const osc = metroCtx.createOscillator(), env = metroCtx.createGain();
+    osc.connect(env); env.connect(metroCtx.destination);
+    osc.frequency.value = isAccent ? 1000 : 700;
+    env.gain.setValueAtTime(isAccent ? 0.6 : 0.35, time);
+    env.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
+    osc.start(time); osc.stop(time + 0.05);
+  }
+  const delay = Math.max(0, (time - metroCtx.currentTime) * 1000);
+  setTimeout(() => flashBeat(beat), delay);
+}
+
+function flashBeat(beat) {
+  const dots = metroBeatsEl.querySelectorAll(".metro-beat");
+  dots.forEach((d, i) => d.classList.toggle("lit", i === beat));
+  clearTimeout(flashBeat._off);
+  flashBeat._off = setTimeout(() => dots.forEach(d => d.classList.remove("lit")), 80);
+}
+
+function metroMuteForRec(mute) {
+  metroMuted = mute;
+  metroMutedNote.textContent = mute ? "🔇 Audio silenziato durante la registrazione" : "";
+}
+
+function metroToggle() {
+  if (metroRunning) {
+    metroRunning = false; clearTimeout(metroSchedulerId);
+    metroBeatsEl.querySelectorAll(".metro-beat").forEach(d => d.classList.remove("lit"));
+    metroToggleBtn.textContent = "Start"; metroToggleBtn.className = "metro-toggle";
+  } else {
+    ensureMetroCtx();
+    metroRunning = true; metroCurBeat = 0;
+    metroNextTime = metroCtx.currentTime + 0.05;
+    metroToggleBtn.textContent = "Stop"; metroToggleBtn.className = "metro-toggle on";
+    metroSchedule();
+  }
+}
 </script>
 </body>
 </html>
