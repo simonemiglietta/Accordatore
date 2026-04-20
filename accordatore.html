@@ -23,12 +23,22 @@
   .meter-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; text-align: center; }
   .detected-note { font-size: 48px; font-weight: 500; line-height: 1; color: #1a1a1a; }
   .detected-freq { font-size: 13px; color: #888; margin-top: 4px; margin-bottom: 14px; }
-
   svg.gauge { width: 100%; height: 90px; }
   .cents-label { font-size: 14px; margin-top: 10px; color: #888; min-height: 22px; }
   .cents-label.in-tune { color: #2d7a2d; font-weight: 500; }
   .cents-label.sharp { color: #c0392b; }
   .cents-label.flat { color: #185FA5; }
+
+  .history-wrap { margin-top: 14px; }
+  .history-label { font-size: 11px; color: #aaa; margin-bottom: 5px; text-align: left; }
+  .history-bar { display: flex; gap: 3px; height: 20px; align-items: flex-end; }
+  .history-bar .hbar { flex: 1; border-radius: 3px; min-height: 3px; }
+
+  .controls-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+  .ctrl-row { display: flex; align-items: center; gap: 10px; }
+  .ctrl-label { font-size: 13px; color: #888; white-space: nowrap; min-width: 80px; }
+  .ctrl-row input[type=range] { flex: 1; }
+  .ctrl-val { font-size: 13px; font-weight: 500; min-width: 32px; text-align: right; }
 
   .start-btn { width: 100%; padding: 14px; border-radius: 10px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 15px; cursor: pointer; margin-bottom: 1rem; display: flex; align-items: center; justify-content: center; gap: 8px; -webkit-tap-highlight-color: transparent; }
   .start-btn.active { background: #EAF3DE; border-color: #639922; color: #2d6e11; font-weight: 500; }
@@ -62,6 +72,18 @@
     <text x="150" y="12" font-size="10" fill="#aaa" text-anchor="middle">0</text>
   </svg>
   <div class="cents-label" id="cents-label">seleziona una corda e avvia</div>
+  <div class="history-wrap">
+    <div class="history-label">Stabilità ultimi 2 sec</div>
+    <div class="history-bar" id="history-bar"></div>
+  </div>
+</div>
+
+<div class="controls-card">
+  <div class="ctrl-row">
+    <span class="ctrl-label">Sensibilità</span>
+    <input type="range" id="sensitivity" min="1" max="10" step="1" value="5">
+    <span class="ctrl-val" id="sens-val">5</span>
+  </div>
 </div>
 
 <button class="start-btn" id="start-btn">
@@ -84,6 +106,7 @@ const TUNINGS = {
 };
 const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
 const STRING_LABELS = ["6ª","5ª","4ª","3ª","2ª","1ª"];
+const HISTORY_SIZE = 20;
 
 function noteToFreq(note) {
   const m = note.match(/^([A-G]#?)(\d)$/);
@@ -108,6 +131,8 @@ let tunings = JSON.parse(JSON.stringify(TUNINGS));
 let currentTuning = "Standard";
 let selectedString = 0;
 let audioCtx = null, analyser = null, rafId = null, micStream = null, listening = false;
+let centsHistory = [];
+let lastHistoryTime = 0;
 
 const tuningsRow = document.getElementById("tunings-row");
 const stringsGrid = document.getElementById("strings-grid");
@@ -120,6 +145,45 @@ const dot = document.getElementById("dot");
 const btnLabel = document.getElementById("btn-label");
 const customInputsDiv = document.getElementById("custom-inputs");
 const applyBtn = document.getElementById("apply-btn");
+const historyBar = document.getElementById("history-bar");
+const sensitivitySlider = document.getElementById("sensitivity");
+const sensVal = document.getElementById("sens-val");
+
+// Crea barre storia
+for (let i = 0; i < HISTORY_SIZE; i++) {
+  const b = document.createElement("div");
+  b.className = "hbar";
+  b.style.background = "#eee";
+  b.style.height = "3px";
+  historyBar.appendChild(b);
+}
+
+sensitivitySlider.oninput = () => { sensVal.textContent = sensitivitySlider.value; };
+
+function getRmsThreshold() {
+  const s = parseInt(sensitivitySlider.value);
+  return 0.055 - (s - 1) * 0.005;
+}
+
+function updateHistory(diffCents, inTune) {
+  centsHistory.push({ diffCents, inTune });
+  if (centsHistory.length > HISTORY_SIZE) centsHistory.shift();
+  const bars = historyBar.querySelectorAll(".hbar");
+  const offset = HISTORY_SIZE - centsHistory.length;
+  bars.forEach((bar, i) => {
+    const idx = i - offset;
+    if (idx < 0) { bar.style.height = "3px"; bar.style.background = "#eee"; return; }
+    const e = centsHistory[idx];
+    const h = 3 + (Math.min(Math.abs(e.diffCents), 50) / 50) * 17;
+    bar.style.height = h.toFixed(1) + "px";
+    bar.style.background = e.inTune ? "#1D9E75" : (e.diffCents > 0 ? "#E57368" : "#378ADD");
+  });
+}
+
+function resetHistory() {
+  centsHistory = [];
+  historyBar.querySelectorAll(".hbar").forEach(b => { b.style.height = "3px"; b.style.background = "#eee"; });
+}
 
 function buildTuningBtns() {
   tuningsRow.innerHTML = "";
@@ -127,7 +191,7 @@ function buildTuningBtns() {
     const b = document.createElement("button");
     b.className = "tuning-btn" + (name === currentTuning ? " active" : "");
     b.textContent = name;
-    b.onclick = () => { currentTuning = name; selectedString = 0; buildTuningBtns(); buildStringBtns(); buildCustomInputs(); };
+    b.onclick = () => { currentTuning = name; selectedString = 0; buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory(); };
     tuningsRow.appendChild(b);
   });
 }
@@ -139,7 +203,7 @@ function buildStringBtns() {
     const b = document.createElement("button");
     b.className = "string-btn" + (i === selectedString ? " selected" : "");
     b.innerHTML = `<div class="note">${note}</div><div class="freq">${STRING_LABELS[i]} — ${freq ? freq.toFixed(1) : "?"}Hz</div>`;
-    b.onclick = () => { selectedString = i; buildStringBtns(); };
+    b.onclick = () => { selectedString = i; buildStringBtns(); resetHistory(); };
     stringsGrid.appendChild(b);
   });
 }
@@ -148,9 +212,7 @@ function buildCustomInputs() {
   customInputsDiv.innerHTML = "";
   tunings[currentTuning].forEach((note, i) => {
     const inp = document.createElement("input");
-    inp.value = note;
-    inp.placeholder = "es. E2";
-    inp.dataset.idx = i;
+    inp.value = note; inp.placeholder = "es. E2"; inp.dataset.idx = i;
     customInputsDiv.appendChild(inp);
   });
 }
@@ -160,27 +222,23 @@ applyBtn.onclick = () => {
   const newNotes = Array.from(inputs).map(i => i.value.trim());
   if (newNotes.some(n => noteToFreq(n) === null)) { alert("Nota non valida! Usa formato tipo E2, G#3…"); return; }
   tunings["Custom"] = newNotes;
-  currentTuning = "Custom";
-  selectedString = 0;
-  buildTuningBtns(); buildStringBtns(); buildCustomInputs();
+  currentTuning = "Custom"; selectedString = 0;
+  buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory();
 };
 
 function setNeedle(cents) {
   const clamped = Math.max(-50, Math.min(50, cents));
-  const angle = (clamped / 50) * 75;
-  const rad = (angle - 90) * Math.PI / 180;
-  const x2 = 150 + 65 * Math.cos(rad);
-  const y2 = 85 + 65 * Math.sin(rad);
-  needle.setAttribute("x2", x2.toFixed(1));
-  needle.setAttribute("y2", y2.toFixed(1));
+  const rad = ((clamped / 50) * 75 - 90) * Math.PI / 180;
+  needle.setAttribute("x2", (150 + 65 * Math.cos(rad)).toFixed(1));
+  needle.setAttribute("y2", (85 + 65 * Math.sin(rad)).toFixed(1));
 }
 
-function autoCorrelate(buf, sampleRate) {
+function autoCorrelate(buf, sampleRate, rmsThresh) {
   const SIZE = buf.length;
   let rms = 0;
   for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / SIZE);
-  if (rms < 0.01) return -1;
+  if (rms < rmsThresh) return -1;
   let r1 = 0, r2 = SIZE - 1;
   for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < 0.2) { r1 = i; break; }
   for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < 0.2) { r2 = SIZE - i; break; }
@@ -195,38 +253,40 @@ function autoCorrelate(buf, sampleRate) {
   let maxval = -1, maxpos = -1;
   for (let i = d; i < newSize; i++) if (c[i] > maxval) { maxval = c[i]; maxpos = i; }
   let T0 = maxpos;
-  const x1 = c[T0 - 1], x2c = c[T0], x3 = c[T0 + 1];
-  const a = (x1 + x3 - 2 * x2c) / 2, b2 = (x3 - x1) / 2;
-  if (a) T0 = T0 - b2 / (2 * a);
+  const x1 = c[T0-1], x2c = c[T0], x3 = c[T0+1];
+  const a = (x1 + x3 - 2*x2c)/2, b2 = (x3-x1)/2;
+  if (a) T0 = T0 - b2/(2*a);
   return sampleRate / T0;
 }
 
-function update() {
+function update(timestamp) {
   if (!analyser) return;
+  rafId = requestAnimationFrame(update);
   const buf = new Float32Array(analyser.fftSize);
   analyser.getFloatTimeDomainData(buf);
-  const freq = autoCorrelate(buf, audioCtx.sampleRate);
+  const freq = autoCorrelate(buf, audioCtx.sampleRate, getRmsThreshold());
   if (freq > 60 && freq < 1400) {
     const { name, cents } = freqToNote(freq);
     detectedNote.textContent = name;
     detectedFreq.textContent = freq.toFixed(1) + " Hz";
     setNeedle(cents);
     const targetFreq = noteToFreq(tunings[currentTuning][selectedString]);
+    let inTune = false, diff = cents;
     if (targetFreq) {
-      const diff = Math.round(1200 * Math.log2(freq / targetFreq));
+      diff = Math.round(1200 * Math.log2(freq / targetFreq));
       if (Math.abs(diff) <= 5) {
-        centsLabel.textContent = "✓ In accordo!";
-        centsLabel.className = "cents-label in-tune";
+        centsLabel.textContent = "✓ In accordo!"; centsLabel.className = "cents-label in-tune"; inTune = true;
       } else if (diff > 5) {
-        centsLabel.textContent = `+${diff} cents — abbassa`;
-        centsLabel.className = "cents-label sharp";
+        centsLabel.textContent = `+${diff} cents — abbassa`; centsLabel.className = "cents-label sharp";
       } else {
-        centsLabel.textContent = `${diff} cents — alza`;
-        centsLabel.className = "cents-label flat";
+        centsLabel.textContent = `${diff} cents — alza`; centsLabel.className = "cents-label flat";
       }
     }
+    if (!lastHistoryTime || timestamp - lastHistoryTime > 100) {
+      lastHistoryTime = timestamp;
+      updateHistory(diff, inTune);
+    }
   }
-  rafId = requestAnimationFrame(update);
 }
 
 startBtn.onclick = async () => {
@@ -238,10 +298,9 @@ startBtn.onclick = async () => {
     analyser = audioCtx = micStream = null;
     dot.className = "dot"; btnLabel.textContent = "Avvia microfono";
     startBtn.className = "start-btn";
-    centsLabel.textContent = "seleziona una corda e avvia";
-    centsLabel.className = "cents-label";
+    centsLabel.textContent = "seleziona una corda e avvia"; centsLabel.className = "cents-label";
     detectedNote.textContent = "—"; detectedFreq.textContent = "0.0 Hz";
-    setNeedle(0); return;
+    setNeedle(0); resetHistory(); return;
   }
   try {
     micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -252,10 +311,8 @@ startBtn.onclick = async () => {
     listening = true;
     dot.className = "dot on"; btnLabel.textContent = "Ferma microfono";
     startBtn.className = "start-btn active";
-    update();
-  } catch(e) {
-    alert("Impossibile accedere al microfono:\n" + e.message);
-  }
+    requestAnimationFrame(update);
+  } catch(e) { alert("Impossibile accedere al microfono:\n" + e.message); }
 };
 
 buildTuningBtns(); buildStringBtns(); buildCustomInputs();
