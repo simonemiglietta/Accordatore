@@ -100,6 +100,7 @@
 </style>
 </head>
 <body>
+<audio id="ios-speaker-unlock" playsinline style="display:none"></audio>
 <h1>🎸 Accordatore</h1>
 
 <div class="tab-nav">
@@ -509,6 +510,15 @@ async function ensureLoopCtx() {
     autoGainControl: false
   }});
     loopCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // iOS: forza output su speaker principale invece dell'earpiece
+    try {
+      const audioEl = document.getElementById("ios-speaker-unlock");
+      // Genera un silenzio brevissimo come blob audio
+      const silenceData = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+      audioEl.src = silenceData;
+      audioEl.setAttribute("playsinline", "");
+      await audioEl.play().catch(()=>{});
+    } catch(e) {}
     return true;
   } catch(e) { alert("Impossibile accedere al microfono:\n" + e.message); return false; }
 }
