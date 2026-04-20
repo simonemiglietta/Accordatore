@@ -50,10 +50,50 @@
   .custom-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px; }
   .custom-inputs input { width: 100%; font-size: 14px; text-align: center; padding: 7px 4px; border-radius: 8px; border: 0.5px solid #bbb; background: #fff; color: #1a1a1a; }
   .apply-btn { width: 100%; padding: 9px; border-radius: 8px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 13px; cursor: pointer; }
+
+  /* Tab nav */
+  .tab-nav { display: flex; gap: 0; margin-bottom: 1rem; border: 0.5px solid #ddd; border-radius: 10px; overflow: hidden; background: #f0f0ec; }
+  .tab-btn { flex: 1; padding: 10px 4px; font-size: 13px; border: none; background: transparent; color: #888; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+  .tab-btn.active { background: #fff; color: #1a1a1a; font-weight: 500; }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  /* Looper */
+  .looper-card { background: #fff; border: 0.5px solid #ddd; border-radius: 12px; padding: 1rem; margin-bottom: 1rem; }
+  .looper-status { font-size: 13px; color: #888; text-align: center; margin-bottom: 14px; min-height: 20px; }
+  .looper-status.recording { color: #c0392b; font-weight: 500; }
+  .looper-status.playing { color: #2d7a2d; font-weight: 500; }
+
+  .looper-waveform { width: 100%; height: 60px; border-radius: 8px; background: #f5f5f0; border: 0.5px solid #eee; margin-bottom: 14px; display: block; }
+
+  .looper-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .lbtn { padding: 14px 8px; border-radius: 10px; border: 0.5px solid #bbb; background: #f0f0ec; color: #1a1a1a; font-size: 14px; cursor: pointer; text-align: center; -webkit-tap-highlight-color: transparent; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+  .lbtn span.licon { font-size: 22px; line-height: 1; }
+  .lbtn span.llabel { font-size: 11px; color: #888; }
+  .lbtn.rec-active { background: #fdecea; border-color: #e57368; color: #c0392b; }
+  .lbtn.rec-active .llabel { color: #c0392b; }
+  .lbtn.play-active { background: #EAF3DE; border-color: #639922; color: #2d6e11; }
+  .lbtn.play-active .llabel { color: #2d6e11; }
+  .lbtn:disabled { opacity: 0.35; pointer-events: none; }
+
+  .looper-vol-row { display: flex; align-items: center; gap: 10px; }
+  .looper-vol-row input[type=range] { flex: 1; }
+  .looper-vol-label { font-size: 12px; color: #aaa; white-space: nowrap; }
+
+  .loop-progress-wrap { height: 4px; border-radius: 2px; background: #eee; margin-bottom: 12px; overflow: hidden; }
+  .loop-progress-bar { height: 100%; width: 0%; background: #1D9E75; border-radius: 2px; transition: width 0.05s linear; }
 </style>
 </head>
 <body>
 <h1>🎸 Accordatore</h1>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('tuner',this)">Accordatore</button>
+  <button class="tab-btn" onclick="switchTab('looper',this)">Looper</button>
+  <button class="tab-btn" onclick="switchTab('custom',this)">Custom</button>
+</div>
+
+<div class="tab-panel active" id="tab-tuner">
 <div class="tunings-row" id="tunings-row"></div>
 <div class="strings-grid" id="strings-grid"></div>
 
@@ -89,12 +129,44 @@
 <button class="start-btn" id="start-btn">
   <span class="dot" id="dot"></span><span id="btn-label">Avvia microfono</span>
 </button>
+</div><!-- /tab-tuner -->
 
+<!-- TAB: Looper -->
+<div class="tab-panel" id="tab-looper">
+<div class="looper-card">
+  <div class="looper-status" id="looper-status">Premi REC per iniziare</div>
+  <canvas class="looper-waveform" id="looper-waveform"></canvas>
+  <div class="loop-progress-wrap"><div class="loop-progress-bar" id="loop-progress"></div></div>
+  <div class="looper-btns">
+    <button class="lbtn" id="lbtn-rec" onclick="looperRec()">
+      <span class="licon">⏺</span><span class="llabel">REC</span>
+    </button>
+    <button class="lbtn" id="lbtn-play" onclick="looperPlay()" disabled>
+      <span class="licon">▶</span><span class="llabel">PLAY / LOOP</span>
+    </button>
+    <button class="lbtn" id="lbtn-stop" onclick="looperStop()" disabled>
+      <span class="licon">⏹</span><span class="llabel">STOP</span>
+    </button>
+    <button class="lbtn" id="lbtn-clear" onclick="looperClear()" disabled>
+      <span class="licon">🗑</span><span class="llabel">CANCELLA</span>
+    </button>
+  </div>
+  <div class="looper-vol-row">
+    <span class="looper-vol-label">Volume loop</span>
+    <input type="range" id="loop-vol" min="0" max="100" step="1" value="80" oninput="setLoopVol(this.value)">
+    <span class="looper-vol-label" id="loop-vol-val">80%</span>
+  </div>
+</div>
+</div><!-- /tab-looper -->
+
+<!-- TAB: Custom -->
+<div class="tab-panel" id="tab-custom">
 <div class="custom-section">
   <div class="custom-title">Accordatura personalizzata (es. E2, G#3, Bb4)</div>
   <div class="custom-inputs" id="custom-inputs"></div>
   <button class="apply-btn" id="apply-btn">Applica accordatura custom</button>
 </div>
+</div><!-- /tab-custom -->
 
 <script>
 const TUNINGS = {
@@ -316,6 +388,243 @@ startBtn.onclick = async () => {
 };
 
 buildTuningBtns(); buildStringBtns(); buildCustomInputs();
+
+// ── Tab switching ──────────────────────────────────────────
+function switchTab(id, btn) {
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  document.getElementById("tab-" + id).classList.add("active");
+  btn.classList.add("active");
+}
+
+// ── Looper ────────────────────────────────────────────────
+let loopCtx = null;
+let loopStream = null;
+let mediaRecorder = null;
+let recordedChunks = [];
+let loopBuffer = null;
+let loopSource = null;
+let loopGain = null;
+let loopState = "idle"; // idle | recording | playing
+let loopStartTime = 0;
+let loopDuration = 0;
+let loopAnimRaf = null;
+
+const looperStatus = document.getElementById("looper-status");
+const lbtnRec = document.getElementById("lbtn-rec");
+const lbtnPlay = document.getElementById("lbtn-play");
+const lbtnStop = document.getElementById("lbtn-stop");
+const lbtnClear = document.getElementById("lbtn-clear");
+const loopProgress = document.getElementById("loop-progress");
+const loopVolSlider = document.getElementById("loop-vol");
+const loopVolVal = document.getElementById("loop-vol-val");
+const loopCanvas = document.getElementById("looper-waveform");
+const loopCtx2d = loopCanvas.getContext("2d");
+
+function setLoopVol(v) {
+  loopVolVal.textContent = v + "%";
+  if (loopGain) loopGain.gain.value = v / 100;
+}
+
+async function ensureLoopCtx() {
+  if (loopCtx) return true;
+  try {
+    loopStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    loopCtx = new (window.AudioContext || window.webkitAudioContext)();
+    return true;
+  } catch(e) {
+    alert("Impossibile accedere al microfono:\n" + e.message);
+    return false;
+  }
+}
+
+// ── Trim silence + crossfade ──────────────────────────────
+function trimAndCrossfade(buffer) {
+  const sr = buffer.sampleRate;
+  const ch = buffer.numberOfChannels;
+  const data = [];
+  for (let i = 0; i < ch; i++) data.push(buffer.getChannelData(i));
+
+  const SILENCE_THRESH = 0.02;
+  const FRAME = 256;
+  const len = data[0].length;
+
+  // Find start: first frame where RMS > threshold
+  let startSample = 0;
+  for (let i = 0; i < len - FRAME; i += FRAME) {
+    let rms = 0;
+    for (let j = 0; j < FRAME; j++) rms += data[0][i+j] ** 2;
+    if (Math.sqrt(rms / FRAME) > SILENCE_THRESH) { startSample = Math.max(0, i - FRAME); break; }
+  }
+
+  // Find end: last frame where RMS > threshold
+  let endSample = len;
+  for (let i = len - FRAME; i > startSample; i -= FRAME) {
+    let rms = 0;
+    for (let j = 0; j < FRAME; j++) rms += data[0][i+j] ** 2;
+    if (Math.sqrt(rms / FRAME) > SILENCE_THRESH) { endSample = Math.min(len, i + FRAME * 2); break; }
+  }
+
+  const trimLen = endSample - startSample;
+  if (trimLen < sr * 0.1) return buffer; // too short after trim, return as-is
+
+  // Crossfade length: 30ms or 10% of loop, whichever is shorter
+  const xfadeLen = Math.min(Math.floor(sr * 0.03), Math.floor(trimLen * 0.1));
+
+  // Output buffer = trimmed length (crossfade folds tail into head, same length)
+  const out = loopCtx.createBuffer(ch, trimLen, sr);
+
+  for (let c2 = 0; c2 < ch; c2++) {
+    const src = data[c2];
+    const dst = out.getChannelData(c2);
+
+    // Copy trimmed region
+    for (let i = 0; i < trimLen; i++) dst[i] = src[startSample + i];
+
+    // Crossfade: fade out head, mix tail into it
+    for (let i = 0; i < xfadeLen; i++) {
+      const t = i / xfadeLen;                     // 0→1
+      const tailIdx = trimLen - xfadeLen + i;
+      // head: fade in from 0, tail: fade out to 0
+      dst[i] = dst[i] * t + dst[tailIdx] * (1 - t);
+    }
+    // Zero out the tail region that was folded in (optional but clean)
+    for (let i = trimLen - xfadeLen; i < trimLen; i++) {
+      const t = (i - (trimLen - xfadeLen)) / xfadeLen;
+      dst[i] = dst[i] * (1 - t);
+    }
+  }
+
+  return out;
+}
+
+async function looperRec() {
+  if (loopState === "recording") return;
+  if (loopState === "playing") looperStop();
+  if (!await ensureLoopCtx()) return;
+
+  recordedChunks = [];
+  loopBuffer = null;
+  drawWaveform(null);
+  loopProgress.style.width = "0%";
+
+  mediaRecorder = new MediaRecorder(loopStream);
+  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
+  mediaRecorder.onstop = async () => {
+    const blob = new Blob(recordedChunks, { type: "audio/webm" });
+    const arrayBuf = await blob.arrayBuffer();
+    const raw = await loopCtx.decodeAudioData(arrayBuf);
+    loopBuffer = trimAndCrossfade(raw);
+    loopDuration = loopBuffer.duration;
+    drawWaveform(loopBuffer);
+    looperStatus.textContent = `Sample pronto — ${loopDuration.toFixed(2)}s`;
+    looperStatus.className = "looper-status";
+    lbtnPlay.disabled = false;
+    lbtnClear.disabled = false;
+    lbtnRec.classList.remove("rec-active");
+  };
+
+  mediaRecorder.start();
+  loopState = "recording";
+  looperStatus.textContent = "● Registrazione in corso…";
+  looperStatus.className = "looper-status recording";
+  lbtnRec.classList.add("rec-active");
+  lbtnStop.disabled = false;
+  lbtnPlay.disabled = true;
+}
+
+function looperPlay() {
+  if (!loopBuffer || loopState === "recording") return;
+  if (loopState === "playing") { looperStop(); return; }
+
+  loopSource = loopCtx.createBufferSource();
+  loopSource.buffer = loopBuffer;
+  loopSource.loop = true;
+  loopGain = loopCtx.createGain();
+  loopGain.gain.value = parseInt(loopVolSlider.value) / 100;
+  loopSource.connect(loopGain);
+  loopGain.connect(loopCtx.destination);
+  loopSource.start();
+  loopStartTime = loopCtx.currentTime;
+  loopState = "playing";
+
+  looperStatus.textContent = "▶ Loop in riproduzione";
+  looperStatus.className = "looper-status playing";
+  lbtnPlay.classList.add("play-active");
+  lbtnPlay.querySelector(".licon").textContent = "⏸";
+  lbtnStop.disabled = false;
+
+  animateProgress();
+}
+
+function looperStop() {
+  if (loopSource) { try { loopSource.stop(); } catch(e) {} loopSource = null; }
+  if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+  if (loopAnimRaf) { cancelAnimationFrame(loopAnimRaf); loopAnimRaf = null; }
+  loopState = loopBuffer ? "idle" : "idle";
+  loopProgress.style.width = "0%";
+  looperStatus.textContent = loopBuffer ? `Sample pronto — ${loopDuration.toFixed(2)}s` : "Premi REC per iniziare";
+  looperStatus.className = "looper-status";
+  lbtnPlay.classList.remove("play-active");
+  lbtnPlay.querySelector(".licon").textContent = "▶";
+  lbtnRec.classList.remove("rec-active");
+  lbtnStop.disabled = true;
+  if (loopBuffer) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
+}
+
+function looperClear() {
+  looperStop();
+  loopBuffer = null; loopDuration = 0;
+  drawWaveform(null);
+  looperStatus.textContent = "Premi REC per iniziare";
+  looperStatus.className = "looper-status";
+  lbtnPlay.disabled = true;
+  lbtnClear.disabled = true;
+  lbtnStop.disabled = true;
+}
+
+function animateProgress() {
+  if (loopState !== "playing") return;
+  const elapsed = (loopCtx.currentTime - loopStartTime) % loopDuration;
+  loopProgress.style.width = ((elapsed / loopDuration) * 100).toFixed(1) + "%";
+  loopAnimRaf = requestAnimationFrame(animateProgress);
+}
+
+function drawWaveform(buffer) {
+  const w = loopCanvas.offsetWidth || 300;
+  const h = loopCanvas.offsetHeight || 60;
+  loopCanvas.width = w; loopCanvas.height = h;
+  loopCtx2d.clearRect(0, 0, w, h);
+  if (!buffer) {
+    loopCtx2d.fillStyle = "#f5f5f0";
+    loopCtx2d.fillRect(0, 0, w, h);
+    loopCtx2d.strokeStyle = "#ddd";
+    loopCtx2d.lineWidth = 1;
+    loopCtx2d.beginPath(); loopCtx2d.moveTo(0, h/2); loopCtx2d.lineTo(w, h/2); loopCtx2d.stroke();
+    return;
+  }
+  const data = buffer.getChannelData(0);
+  const step = Math.ceil(data.length / w);
+  loopCtx2d.fillStyle = "#f5f5f0";
+  loopCtx2d.fillRect(0, 0, w, h);
+  loopCtx2d.strokeStyle = "#378ADD";
+  loopCtx2d.lineWidth = 1.5;
+  loopCtx2d.beginPath();
+  for (let i = 0; i < w; i++) {
+    let min = 1, max = -1;
+    for (let j = 0; j < step; j++) {
+      const v = data[i * step + j] || 0;
+      if (v < min) min = v; if (v > max) max = v;
+    }
+    const y1 = ((1 + min) / 2) * h;
+    const y2 = ((1 + max) / 2) * h;
+    if (i === 0) loopCtx2d.moveTo(i, y1); else loopCtx2d.lineTo(i, y1);
+    loopCtx2d.lineTo(i, y2);
+  }
+  loopCtx2d.stroke();
+}
+
+drawWaveform(null);
 </script>
 </body>
 </html>
