@@ -168,8 +168,8 @@
 
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Volume loop</span>
-      <input type="range" id="loop-vol" min="0" max="200" step="1" value="100" oninput="setLoopVol(this.value)">
-      <span class="loop-ctrl-val" id="loop-vol-val">100%</span>
+      <input type="range" id="loop-vol" min="0" max="400" step="1" value="150" oninput="setLoopVol(this.value)">
+      <span class="loop-ctrl-val" id="loop-vol-val">150%</span>
     </div>
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Velocità</span>
@@ -417,7 +417,7 @@ let loopCtx = null, loopStream = null;
 let mediaRecorder = null, recordedChunks = [];
 let loopBuffer = null;          // AudioBuffer (processed, at original speed)
 let loopStretchedBuffer = null; // AudioBuffer (WSOLA output at current speed)
-let loopSource = null, loopGain = null;
+let loopSource = null, loopGain = null, loopCompressor = null;
 let loopState = "idle";
 let loopStartTime = 0, loopDuration = 0;
 let loopAnimRaf = null;
@@ -656,7 +656,14 @@ function looperPlay() {
 
   loopGain = loopCtx.createGain();
   loopGain.gain.value = parseInt(loopVolSlider.value) / 100;
-  loopGain.connect(loopCtx.destination);
+  loopCompressor = loopCtx.createDynamicsCompressor();
+  loopCompressor.threshold.value = -24;
+  loopCompressor.knee.value = 10;
+  loopCompressor.ratio.value = 4;
+  loopCompressor.attack.value = 0.003;
+  loopCompressor.release.value = 0.1;
+  loopGain.connect(loopCompressor);
+  loopCompressor.connect(loopCtx.destination);
 
   loopSource = loopCtx.createBufferSource();
   loopSource.buffer = loopStretchedBuffer;
