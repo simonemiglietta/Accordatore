@@ -361,7 +361,7 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1rem;
+    padding: 0.75rem;
     margin-top: 8px;
     position: relative;
   }
@@ -371,22 +371,35 @@
     font-size: 9px; letter-spacing: 2px;
     background: var(--bg); padding: 0 6px; color: var(--text-muted);
   }
-  .metro-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 4px; }
+  .metro-header { display: none; }
   .metro-title { display: none; }
   .metro-toggle {
-    padding: 5px 14px;
+    width: 32px; height: 32px; flex-shrink: 0;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text-dim);
     font-family: var(--font);
-    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-size: 13px;
     cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
   }
   .metro-toggle.on { border-color: var(--green); color: var(--text); background: var(--green-glow); text-shadow: 0 0 6px var(--green); }
-  .metro-bpm-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
-  .metro-bpm-row input[type=range] { flex: 1; accent-color: var(--green); }
-  .metro-bpm-val { font-size: 32px; min-width: 52px; text-align: right; text-shadow: 0 0 10px var(--green); letter-spacing: -1px; }
+  .metro-step-btn {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font);
+    font-size: 16px;
+    cursor: pointer; transition: all 0.12s; -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .metro-step-btn:active { color: var(--text); border-color: var(--green); transform: scale(0.9); }
+  .metro-bpm-row { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+  .metro-bpm-row input[type=range] { flex: 1; accent-color: var(--green); min-width: 0; }
+  .metro-bpm-val { font-size: 24px; min-width: 44px; text-align: right; text-shadow: 0 0 10px var(--green); letter-spacing: -1px; }
   .metro-bpm-unit { font-size: 9px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
   .metro-sig-row { display: flex; gap: 6px; margin-bottom: 12px; }
   .metro-sig-btn {
@@ -639,10 +652,12 @@
   <div class="metro-card">
     <div class="metro-header">
       <span class="metro-title">Metronome</span>
-      <button class="metro-toggle" id="metro-toggle" onclick="metroToggle()">Start</button>
     </div>
     <div class="metro-bpm-row">
+      <button class="metro-toggle" id="metro-toggle" onclick="metroToggle()">▶</button>
+      <button class="metro-step-btn" onclick="metroAdjBpm(-1)">−</button>
       <input type="range" id="metro-bpm" min="40" max="240" step="1" value="120" oninput="metroBpmChange(this.value)">
+      <button class="metro-step-btn" onclick="metroAdjBpm(+1)">+</button>
       <span class="metro-bpm-val" id="metro-bpm-val">120</span>
       <span class="metro-bpm-unit">BPM</span>
     </div>
@@ -1399,6 +1414,11 @@ function buildMetroBeats() {
 buildMetroBeats();
 
 function metroBpmChange(v) { metroBpm = parseInt(v); metroBpmValEl.textContent = metroBpm; }
+function metroAdjBpm(delta) {
+  metroBpm = Math.max(40, Math.min(240, metroBpm + delta));
+  document.getElementById("metro-bpm").value = metroBpm;
+  metroBpmValEl.textContent = metroBpm;
+}
 
 function metroSig(beats, btn) {
   document.querySelectorAll(".metro-sig-btn").forEach(b => b.classList.remove("active"));
@@ -1452,12 +1472,12 @@ function metroToggle() {
   if (metroRunning) {
     metroRunning = false; clearTimeout(metroSchedulerId);
     metroBeatsEl.querySelectorAll(".metro-beat").forEach(d => d.classList.remove("lit"));
-    metroToggleBtn.textContent = "Start"; metroToggleBtn.className = "metro-toggle";
+    metroToggleBtn.textContent = "▶"; metroToggleBtn.className = "metro-toggle";
   } else {
     ensureMetroCtx();
     metroRunning = true; metroCurBeat = 0;
     metroNextTime = metroCtx.currentTime + 0.05;
-    metroToggleBtn.textContent = "Stop"; metroToggleBtn.className = "metro-toggle on";
+    metroToggleBtn.textContent = "⏹"; metroToggleBtn.className = "metro-toggle on";
     metroSchedule();
   }
 }
