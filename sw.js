@@ -1,7 +1,14 @@
-const CACHE = "guitar-tuner-v1";
+const CACHE = "guitar-tuner-v2";
 const FILES = [
   "./accordatore.html",
-  "./manifest.json"
+  "./manifest.json",
+  "./js/app.js",
+  "./js/shared.js",
+  "./js/tuner.js",
+  "./js/looper.js",
+  "./js/metronome.js",
+  "./js/chord.js",
+  "./js/pipe.js",
 ];
 
 self.addEventListener("install", e => {

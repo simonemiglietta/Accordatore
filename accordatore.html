@@ -332,7 +332,6 @@
   .looper-status.recording { color: var(--red); text-shadow: 0 0 6px var(--red); animation: blink 0.6s linear infinite; }
   .looper-status.playing { color: var(--text); text-shadow: 0 0 6px var(--green); }
   .looper-status.processing { color: var(--text-muted); }
-  .looper-status.stretching { color: var(--amber); }
   canvas.looper-waveform { width: 100%; height: 44px; border-radius: 2px; background: #050a03; border: 1px solid var(--border); margin-bottom: 10px; display: block; }
   .loop-progress-wrap { height: 2px; background: var(--surface2); margin-bottom: 8px; overflow: hidden; }
   .loop-progress-bar { height: 100%; width: 0%; background: var(--green); box-shadow: 0 0 4px var(--green); transition: width 0.05s linear; }
@@ -380,8 +379,6 @@
     font-size: 9px; letter-spacing: 2px;
     background: var(--bg); padding: 0 6px; color: var(--text-muted);
   }
-  .metro-header { display: none; }
-  .metro-title { display: none; }
   .metro-toggle {
     width: 32px; height: 32px; flex-shrink: 0;
     border-radius: var(--radius);
@@ -454,8 +451,6 @@
     font-size: 9px; letter-spacing: 2px;
     background: var(--bg); padding: 0 6px; color: var(--text-muted);
   }
-  .trainer-header { display: none; }
-  .trainer-title { display: none; }
   .trainer-toggle {
     width: 32px; height: 32px; flex-shrink: 0;
     border-radius: var(--radius);
@@ -558,7 +553,6 @@
     font-size: 9px; letter-spacing: 2px;
     background: var(--bg); padding: 0 6px; color: var(--text-muted);
   }
-  .custom-title { display: none; }
   .custom-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; margin-top: 8px; }
   .custom-inputs input {
     width: 100%; font-size: 15px; font-family: var(--font); text-align: center;
@@ -586,14 +580,12 @@
   #install-banner {
     position: fixed;
     bottom: calc(1rem + env(safe-area-inset-bottom));
-    left: 0.75rem; right: 0.75rem;
+    left: 0.875rem; right: 0.875rem;
     background: var(--surface2);
     border: 1px solid var(--border-bright);
     border-radius: var(--radius);
-    padding: 10px 12px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    padding: 0.75rem 1rem;
+    display: flex; align-items: center; gap: 10px;
     z-index: 9997;
     box-shadow: 0 0 20px var(--green-glow);
     font-family: var(--font);
@@ -637,10 +629,10 @@
 <h1 id="splash-title">🎸 Guitar Tuner</h1>
 
 <div class="tab-nav">
-  <button class="tab-btn active" onclick="switchTab('tuner',this)">Tuner</button>
-  <button class="tab-btn" onclick="switchTab('looper',this)">Looper</button>
-  <button class="tab-btn" onclick="switchTab('custom',this)">Custom</button>
-  <button class="tab-btn" onclick="switchTab('chord',this)">Accordi</button>
+  <button class="tab-btn active" data-tab="tuner">Tuner</button>
+  <button class="tab-btn" data-tab="looper">Looper</button>
+  <button class="tab-btn" data-tab="custom">Custom</button>
+  <button class="tab-btn" data-tab="chord">Accordi</button>
 </div>
 
 <!-- ══ TAB ACCORDATORE ══ -->
@@ -662,14 +654,14 @@
   <div class="controls-card">
     <div class="ctrl-row">
       <span class="ctrl-label">Sensitivity</span>
-      <input type="range" id="sensitivity" min="1" max="10" step="1" value="5" oninput="document.getElementById('sens-val').textContent=this.value">
+      <input type="range" id="sensitivity" min="1" max="10" step="1" value="5">
       <span class="ctrl-val" id="sens-val">5</span>
     </div>
   </div>
   <button class="start-btn" id="start-btn">
     <span class="dot" id="dot"></span><span id="btn-label">Start microphone</span>
   </button>
-  <button class="start-btn" id="pipe-btn" onclick="pipeToggle()" style="margin-top:-0.5rem">
+  <button class="start-btn" id="pipe-btn" style="margin-top:-0.5rem">
     <span class="dot" id="pipe-dot"></span><span id="pipe-label">Play reference note</span>
   </button>
 </div><!-- /tab-tuner -->
@@ -682,72 +674,66 @@
     <div class="loop-progress-wrap"><div class="loop-progress-bar" id="loop-progress"></div></div>
 
     <div class="looper-btns">
-      <button class="lbtn" id="lbtn-rec" onclick="looperRec()">
+      <button class="lbtn" id="lbtn-rec">
         <span class="licon">⏺</span><span class="llabel">REC</span>
       </button>
-      <button class="lbtn" id="lbtn-play" onclick="looperPlay()" disabled>
+      <button class="lbtn" id="lbtn-play" disabled>
         <span class="licon">▶</span><span class="llabel">PLAY / LOOP</span>
       </button>
-      <button class="lbtn" id="lbtn-stop" onclick="looperStop()" disabled>
+      <button class="lbtn" id="lbtn-stop" disabled>
         <span class="licon">⏹</span><span class="llabel">STOP</span>
       </button>
-      <button class="lbtn" id="lbtn-clear" onclick="looperClear()" disabled>
+      <button class="lbtn" id="lbtn-clear" disabled>
         <span class="licon">🗑</span><span class="llabel">CANCELLA</span>
       </button>
     </div>
 
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Loop volume</span>
-      <input type="range" id="loop-vol" min="0" max="400" step="1" value="150" oninput="setLoopVol(this.value)">
+      <input type="range" id="loop-vol" min="0" max="400" step="1" value="150">
       <span class="loop-ctrl-val" id="loop-vol-val">150%</span>
     </div>
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Speed</span>
-      <input type="range" id="loop-speed" min="25" max="100" step="1" value="100" oninput="setLoopSpeed(this.value)" disabled>
+      <input type="range" id="loop-speed" min="25" max="100" step="1" value="100" disabled>
       <span class="loop-ctrl-val" id="loop-speed-val">100%</span>
     </div>
   </div>
 
   <div class="metro-card">
-    <div class="metro-header">
-      <span class="metro-title">Metronome</span>
-    </div>
     <div class="metro-bpm-row">
-      <button class="metro-toggle" id="metro-toggle" onclick="metroToggle()">▶</button>
-      <button class="metro-step-btn" onclick="metroAdjBpm(-1)">−</button>
-      <input type="range" id="metro-bpm" min="40" max="240" step="1" value="120" oninput="metroBpmChange(this.value)">
-      <button class="metro-step-btn" onclick="metroAdjBpm(+1)">+</button>
+      <button class="metro-toggle" id="metro-toggle">▶</button>
+      <button class="metro-step-btn" data-delta="-1">−</button>
+      <input type="range" id="metro-bpm" min="40" max="240" step="1" value="120">
+      <button class="metro-step-btn" data-delta="1">+</button>
       <span class="metro-bpm-val" id="metro-bpm-val">120</span>
       <span class="metro-bpm-unit">BPM</span>
     </div>
     <div class="metro-sig-row">
-      <button class="metro-sig-btn" onclick="metroSig(2,this)">2/4</button>
-      <button class="metro-sig-btn" onclick="metroSig(3,this)">3/4</button>
-      <button class="metro-sig-btn active" onclick="metroSig(4,this)">4/4</button>
-      <button class="metro-sig-btn" onclick="metroSig(6,this)">6/8</button>
+      <button class="metro-sig-btn" data-beats="2">2/4</button>
+      <button class="metro-sig-btn" data-beats="3">3/4</button>
+      <button class="metro-sig-btn active" data-beats="4">4/4</button>
+      <button class="metro-sig-btn" data-beats="6">6/8</button>
     </div>
     <div class="metro-beats" id="metro-beats"></div>
     <div class="metro-muted-note" id="metro-muted-note"></div>
     <div class="trainer-card">
-      <div class="trainer-header">
-        <span class="trainer-title">Auto acceleration</span>
-      </div>
       <div class="trainer-row">
-        <button class="trainer-toggle" id="trainer-toggle" onclick="trainerToggle()">▶</button>
-        <button class="metro-step-btn" onclick="trainerPeriodAdj(-1)">−</button>
-        <input type="range" id="trainer-period" min="1" max="32" step="1" value="4" oninput="trainerPeriodChange(this.value)">
-        <button class="metro-step-btn" onclick="trainerPeriodAdj(+1)">+</button>
+        <button class="trainer-toggle" id="trainer-toggle">▶</button>
+        <button class="metro-step-btn trainer-period-btn" data-delta="-1">−</button>
+        <input type="range" id="trainer-period" min="1" max="32" step="1" value="4">
+        <button class="metro-step-btn trainer-period-btn" data-delta="1">+</button>
         <span class="trainer-val" id="trainer-period-val">4 bt</span>
       </div>
       <div class="trainer-step-row">
         <span class="trainer-step-lbl">BPM step</span>
-        <button class="step-btn" onclick="trainerStepAdj(-1)">−</button>
+        <button class="step-btn trainer-step-btn" data-delta="-1">−</button>
         <span class="step-val-box" id="trainer-step-val">+2</span>
-        <button class="step-btn" onclick="trainerStepAdj(+1)">+</button>
+        <button class="step-btn trainer-step-btn" data-delta="1">+</button>
       </div>
       <div class="trainer-row">
         <span class="trainer-lbl">Target BPM</span>
-        <input type="range" id="trainer-target" min="40" max="240" step="1" value="160" oninput="trainerTargetChange(this.value)">
+        <input type="range" id="trainer-target" min="40" max="240" step="1" value="160">
         <span class="trainer-val" id="trainer-target-val">160</span>
       </div>
       <div class="trainer-status" id="trainer-status"></div>
@@ -770,7 +756,7 @@
   </div>
   <div class="chord-ctrl-row">
     <span class="chord-ctrl-lbl">Sensitivity</span>
-    <input type="range" id="chord-sens" min="1" max="10" step="1" value="5" oninput="chordSensChange(this.value)">
+    <input type="range" id="chord-sens" min="1" max="10" step="1" value="5">
     <span class="chord-ctrl-val" id="chord-sens-val">5</span>
   </div>
   <button class="start-btn" id="chord-start-btn" style="margin-top:0.5rem">
@@ -781,1305 +767,11 @@
 <!-- ══ TAB CUSTOM ══ -->
 <div class="tab-panel" id="tab-custom">
   <div class="custom-section">
-    <div class="custom-title">Accordatura personalizzata (es. E2, G#3, Bb4)</div>
     <div class="custom-inputs" id="custom-inputs"></div>
     <button class="apply-btn" id="apply-btn">Apply custom tuning</button>
   </div>
 </div><!-- /tab-custom -->
 
-<script>
-// ════════════════════════════════════════════════
-//  SHARED
-// ════════════════════════════════════════════════
-function switchTab(id, btn) {
-  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("active"));
-  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
-  document.getElementById("tab-" + id).classList.add("active");
-  btn.classList.add("active");
-}
-
-// ════════════════════════════════════════════════
-//  TUNER
-// ════════════════════════════════════════════════
-const TUNINGS = {
-  "Standard": ["E2","A2","D3","G3","B3","E4"],
-  "Drop D":   ["D2","A2","D3","G3","B3","E4"],
-  "Open G":   ["D2","G2","D3","G3","B3","D4"],
-  "DADGAD":   ["D2","A2","D3","G3","A3","D4"],
-  "Open E":   ["E2","B2","E3","G#3","B3","E4"],
-};
-const NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-const STRING_LABELS = ["6th","5th","4th","3rd","2nd","1st"];
-const HISTORY_SIZE = 20;
-
-function noteToFreq(note) {
-  const m = note.match(/^([A-G]#?)(\d)$/);
-  if (!m) return null;
-  const n = NOTE_NAMES.indexOf(m[1]);
-  if (n < 0) return null;
-  return 440 * Math.pow(2, ((parseInt(m[2]) + 1) * 12 + n - 69) / 12);
-}
-
-function freqToNote(freq) {
-  if (freq <= 0) return { name: "—", cents: 0 };
-  const midi = 12 * Math.log2(freq / 440) + 69;
-  const midiR = Math.round(midi);
-  return {
-    name: NOTE_NAMES[((midiR % 12) + 12) % 12] + (Math.floor(midiR / 12) - 1),
-    cents: Math.round((midi - midiR) * 100)
-  };
-}
-
-let tunings = JSON.parse(JSON.stringify(TUNINGS));
-let currentTuning = "Standard", selectedString = 0;
-let tunerCtx = null, analyser = null, tunerRaf = null, micStream = null, tunerOn = false;
-let centsHistory = [], lastHistoryTime = 0;
-
-const tuningsRow   = document.getElementById("tunings-row");
-const stringsGrid  = document.getElementById("strings-grid");
-const detectedNote = document.getElementById("detected-note");
-const detectedFreq = document.getElementById("detected-freq");
-const needle       = document.getElementById("needle");
-const centsLabel   = document.getElementById("cents-label");
-const startBtn     = document.getElementById("start-btn");
-const dotEl        = document.getElementById("dot");
-const btnLabel     = document.getElementById("btn-label");
-const historyBar   = document.getElementById("history-bar");
-const sensitivitySlider = document.getElementById("sensitivity");
-
-for (let i = 0; i < HISTORY_SIZE; i++) {
-  const b = document.createElement("div"); b.className = "hbar";
-  b.style.cssText = "background:#eee;height:3px"; historyBar.appendChild(b);
-}
-
-function getRmsThreshold() { return 0.055 - (parseInt(sensitivitySlider.value) - 1) * 0.005; }
-
-function updateHistory(diff, inTune) {
-  centsHistory.push({ diff, inTune });
-  if (centsHistory.length > HISTORY_SIZE) centsHistory.shift();
-  const bars = historyBar.querySelectorAll(".hbar");
-  const offset = HISTORY_SIZE - centsHistory.length;
-  bars.forEach((bar, i) => {
-    const idx = i - offset;
-    if (idx < 0) { bar.style.height = "3px"; bar.style.background = "#eee"; return; }
-    const e = centsHistory[idx];
-    bar.style.height = (3 + (Math.min(Math.abs(e.diff), 50) / 50) * 17).toFixed(1) + "px";
-    bar.style.background = e.inTune ? "#1D9E75" : (e.diff > 0 ? "#E57368" : "#378ADD");
-  });
-}
-
-function resetHistory() {
-  centsHistory = [];
-  historyBar.querySelectorAll(".hbar").forEach(b => { b.style.height = "3px"; b.style.background = "#eee"; });
-}
-
-function buildTuningBtns() {
-  tuningsRow.innerHTML = "";
-  Object.keys(tunings).forEach(name => {
-    const b = document.createElement("button");
-    b.className = "tuning-btn" + (name === currentTuning ? " active" : "");
-    b.textContent = name;
-    b.onclick = () => { currentTuning = name; selectedString = 0; 
-// Splash title fade
-setTimeout(() => {
-  const t = document.getElementById("splash-title");
-  if (t) t.classList.add("hidden");
-}, 1500);
-
-buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory(); };
-    tuningsRow.appendChild(b);
-  });
-}
-
-function buildStringBtns() {
-  stringsGrid.innerHTML = "";
-  tunings[currentTuning].forEach((note, i) => {
-    const freq = noteToFreq(note);
-    const b = document.createElement("button");
-    b.className = "string-btn" + (i === selectedString ? " selected" : "");
-    b.innerHTML = `<div class="note">${note}</div><div class="freq">${STRING_LABELS[i]} — ${freq ? freq.toFixed(1) : "?"}Hz</div>`;
-    b.onclick = () => { selectedString = i; buildStringBtns(); resetHistory(); };
-    stringsGrid.appendChild(b);
-  });
-}
-
-function buildCustomInputs() {
-  const div = document.getElementById("custom-inputs"); div.innerHTML = "";
-  tunings[currentTuning].forEach((note, i) => {
-    const inp = document.createElement("input");
-    inp.value = note; inp.placeholder = "es. E2"; inp.dataset.idx = i;
-    div.appendChild(inp);
-  });
-}
-
-document.getElementById("apply-btn").onclick = () => {
-  const inputs = document.getElementById("custom-inputs").querySelectorAll("input");
-  const newNotes = Array.from(inputs).map(i => i.value.trim());
-  if (newNotes.some(n => noteToFreq(n) === null)) { alert("Invalid note! Use format like E2, G#3…"); return; }
-  tunings["Custom"] = newNotes;
-  currentTuning = "Custom"; selectedString = 0;
-  
-// Splash title fade
-setTimeout(() => {
-  const t = document.getElementById("splash-title");
-  if (t) t.classList.add("hidden");
-}, 1500);
-
-buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory();
-};
-
-// ── Canvas gauge ───────────────────────────────
-const gaugeCanvas = document.getElementById("gauge-canvas");
-const gaugeCtx    = gaugeCanvas.getContext("2d");
-let gaugeNeedleAngle = -Math.PI / 2; // starts center
-let gaugeTargetAngle = -Math.PI / 2;
-let gaugeInTune = false;
-let gaugeAnimRaf = null;
-
-function resizeGauge() {
-  const w = gaugeCanvas.offsetWidth;
-  gaugeCanvas.width = w * window.devicePixelRatio;
-  gaugeCanvas.height = 80 * window.devicePixelRatio;
-  gaugeCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  drawGauge();
-}
-
-function drawGauge() {
-  const w = gaugeCanvas.offsetWidth, h = 100;
-  gaugeCtx.fillStyle = '#0a0f06'; gaugeCtx.fillRect(0, 0, w, h);
-  const cx = w / 2, cy = h - 10, r = Math.min(w * 0.42, 78);
-
-  // Arc track
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.2, Math.PI * 1.8, false);  // wider arc -75 to +75 deg mapped to PI range
-  gaugeCtx.strokeStyle = "#0d2a08";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.lineCap = "round";
-  gaugeCtx.stroke();
-
-  // Colored zones
-  // Flat zone (left)
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.2, Math.PI * 1.5, false);
-  gaugeCtx.strokeStyle = "rgba(255,176,0,0.4)";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.stroke();
-
-  // Sharp zone (right)
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.5, Math.PI * 1.8, false);
-  gaugeCtx.strokeStyle = "rgba(255,59,59,0.4)";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.stroke();
-
-  // In-tune zone center
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.46, Math.PI * 1.54, false);
-  gaugeCtx.strokeStyle = gaugeInTune ? "rgba(57,255,20,1)" : "rgba(57,255,20,0.4)";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.stroke();
-
-  // Tick marks
-  for (let i = -5; i <= 5; i++) {
-    const angle = Math.PI * 1.5 + (i / 5) * Math.PI * 0.3;
-    const isMajor = i % 5 === 0;
-    const r1 = r + 4, r2 = r + (isMajor ? 10 : 6);
-    gaugeCtx.beginPath();
-    gaugeCtx.moveTo(cx + r1 * Math.cos(angle), cy + r1 * Math.sin(angle));
-    gaugeCtx.lineTo(cx + r2 * Math.cos(angle), cy + r2 * Math.sin(angle));
-    gaugeCtx.strokeStyle = isMajor ? "#1a7a0a" : "#0d3a06";
-    gaugeCtx.lineWidth = isMajor ? 1.5 : 1;
-    gaugeCtx.stroke();
-  }
-
-  // Needle
-  const needleLen = r - 6;
-  const nx = cx + needleLen * Math.cos(gaugeNeedleAngle);
-  const ny = cy + needleLen * Math.sin(gaugeNeedleAngle);
-  // Shadow
-  gaugeCtx.beginPath();
-  gaugeCtx.moveTo(cx, cy);
-  gaugeCtx.lineTo(nx, ny);
-  gaugeCtx.strokeStyle = "rgba(57,255,20,0.08)";
-  gaugeCtx.lineWidth = 5;
-  gaugeCtx.lineCap = "round";
-  gaugeCtx.stroke();
-  // Needle body
-  gaugeCtx.beginPath();
-  gaugeCtx.moveTo(cx, cy);
-  gaugeCtx.lineTo(nx, ny);
-  gaugeCtx.strokeStyle = gaugeInTune ? "#39ff14" : "#39ff14";
-  gaugeCtx.lineWidth = 2.5;
-  gaugeCtx.stroke();
-  // Pivot
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, 5, 0, Math.PI * 2);
-  gaugeCtx.fillStyle = "#39ff14";
-  gaugeCtx.fill();
-  // Pivot inner
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, 2.5, 0, Math.PI * 2);
-  gaugeCtx.fillStyle = "#0a0f06";
-  gaugeCtx.fill();
-}
-
-function animateGauge() {
-  const diff = gaugeTargetAngle - gaugeNeedleAngle;
-  if (Math.abs(diff) > 0.001) {
-    gaugeNeedleAngle += diff * 0.18;
-    drawGauge();
-    gaugeAnimRaf = requestAnimationFrame(animateGauge);
-  } else {
-    gaugeNeedleAngle = gaugeTargetAngle;
-    drawGauge();
-    gaugeAnimRaf = null;
-  }
-}
-
-function setNeedle(cents) {
-  const clamped = Math.max(-50, Math.min(50, cents));
-  // Map -50..+50 to PI*1.2..PI*1.8
-  gaugeTargetAngle = Math.PI * 1.5 + (clamped / 50) * Math.PI * 0.3;
-  if (!gaugeAnimRaf) gaugeAnimRaf = requestAnimationFrame(animateGauge);
-}
-
-resizeGauge();
-window.addEventListener("resize", resizeGauge);
-
-function autoCorrelate(buf, sr) {
-  const SIZE = buf.length;
-  let rms = 0;
-  for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
-  rms = Math.sqrt(rms / SIZE);
-  if (rms < getRmsThreshold()) return -1;
-  let r1 = 0, r2 = SIZE - 1;
-  for (let i = 0; i < SIZE / 2; i++) if (Math.abs(buf[i]) < 0.2) { r1 = i; break; }
-  for (let i = 1; i < SIZE / 2; i++) if (Math.abs(buf[SIZE - i]) < 0.2) { r2 = SIZE - i; break; }
-  buf = buf.slice(r1, r2);
-  const n = buf.length, c = new Array(n).fill(0);
-  for (let i = 0; i < n; i++) for (let j = 0; j < n - i; j++) c[i] += buf[j] * buf[j + i];
-  let d = 0; while (c[d] > c[d + 1]) d++;
-  let mx = -1, mp = -1;
-  for (let i = d; i < n; i++) if (c[i] > mx) { mx = c[i]; mp = i; }
-  const x1 = c[mp-1], x2 = c[mp], x3 = c[mp+1];
-  const a = (x1 + x3 - 2*x2)/2, b2 = (x3-x1)/2;
-  let T0 = mp; if (a) T0 -= b2/(2*a);
-  return sr / T0;
-}
-
-function tunerUpdate(ts) {
-  if (!analyser) return;
-  tunerRaf = requestAnimationFrame(tunerUpdate);
-  const buf = new Float32Array(analyser.fftSize);
-  analyser.getFloatTimeDomainData(buf);
-  const freq = autoCorrelate(buf, tunerCtx.sampleRate);
-  if (freq > 60 && freq < 1400) {
-    const { name, cents } = freqToNote(freq);
-    detectedNote.textContent = name;
-    detectedFreq.textContent = freq.toFixed(1) + " Hz";
-    setNeedle(cents);
-    const tf = noteToFreq(tunings[currentTuning][selectedString]);
-    let inTune = false, diff = cents;
-    if (tf) {
-      diff = Math.round(1200 * Math.log2(freq / tf));
-      if (Math.abs(diff) <= 5) { centsLabel.textContent = "✓ In tune!"; centsLabel.className = "cents-label in-tune"; inTune = true; gaugeInTune = true; detectedNote.classList.add("in-tune"); }
-      else if (diff > 5) { centsLabel.textContent = `+${diff} cents — lower`; centsLabel.className = "cents-label sharp"; gaugeInTune = false; detectedNote.classList.remove("in-tune"); }
-      else { centsLabel.textContent = `${diff} cents — raise`; centsLabel.className = "cents-label flat"; gaugeInTune = false; detectedNote.classList.remove("in-tune"); }
-    }
-    if (!lastHistoryTime || ts - lastHistoryTime > 100) { lastHistoryTime = ts; updateHistory(diff, inTune); }
-  }
-}
-
-startBtn.onclick = async () => {
-  if (tunerOn) {
-    tunerOn = false;
-    if (tunerRaf) cancelAnimationFrame(tunerRaf);
-    if (micStream) micStream.getTracks().forEach(t => t.stop());
-    if (tunerCtx) tunerCtx.close();
-    analyser = tunerCtx = micStream = null;
-    dotEl.className = "dot"; btnLabel.textContent = "Start microphone"; startBtn.className = "start-btn";
-    centsLabel.textContent = "select a string and start"; centsLabel.className = "cents-label";
-    detectedNote.textContent = "—"; detectedFreq.textContent = "0.0 Hz"; setNeedle(0); resetHistory();
-    return;
-  }
-  try {
-    micStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    tunerCtx = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = tunerCtx.createAnalyser(); analyser.fftSize = 2048;
-    tunerCtx.createMediaStreamSource(micStream).connect(analyser);
-    tunerOn = true;
-    dotEl.className = "dot on"; btnLabel.textContent = "Stop microphone"; startBtn.className = "start-btn active";
-    requestAnimationFrame(tunerUpdate);
-  } catch(e) { alert("Cannot access microphone:\n" + e.message); }
-};
-
-
-// Splash title fade
-setTimeout(() => {
-  const t = document.getElementById("splash-title");
-  if (t) t.classList.add("hidden");
-}, 1500);
-
-buildTuningBtns(); buildStringBtns(); buildCustomInputs();
-
-// ════════════════════════════════════════════════
-//  LOOPER
-// ════════════════════════════════════════════════
-let loopCtx = null, loopStream = null;
-let mediaRecorder = null, recordedChunks = [];
-let loopBuffer = null;          // AudioBuffer (processed, at original speed)
-let loopStretchedBuffer = null; // AudioBuffer (WSOLA output at current speed)
-let loopSource = null, loopGain = null, loopCompressor = null;
-let loopState = "idle";
-let loopStartTime = 0, loopDuration = 0;
-let loopAnimRaf = null;
-let loopSpeed = 1.0;
-
-const looperStatus  = document.getElementById("looper-status");
-const lbtnRec       = document.getElementById("lbtn-rec");
-const lbtnPlay      = document.getElementById("lbtn-play");
-const lbtnStop      = document.getElementById("lbtn-stop");
-const lbtnClear     = document.getElementById("lbtn-clear");
-const loopProgress  = document.getElementById("loop-progress");
-const loopVolSlider = document.getElementById("loop-vol");
-const loopVolVal    = document.getElementById("loop-vol-val");
-const loopSpeedSlider = document.getElementById("loop-speed");
-const loopSpeedVal  = document.getElementById("loop-speed-val");
-const loopCanvas    = document.getElementById("looper-waveform");
-const loopCtx2d     = loopCanvas.getContext("2d");
-
-function setLoopVol(v) { loopVolVal.textContent = v + "%"; if (loopGain) loopGain.gain.value = v / 100; }
-
-let loopStretchDebounce = null;
-let loopStretchPending = false;
-let loopSpeedPending = 1.0;
-
-function setLoopSpeed(v) {
-  loopSpeed = parseInt(v) / 100;
-  loopSpeedVal.textContent = v + "%";
-  if (!loopBuffer) return;
-  // Debounce: wait 300ms after slider stops moving, then stretch in background
-  clearTimeout(loopStretchDebounce);
-  loopSpeedPending = loopSpeed;
-  loopStretchDebounce = setTimeout(() => applyStretchInBackground(loopSpeedPending), 300);
-}
-
-function applyStretchInBackground(rate) {
-  if (!loopBuffer) return;
-  loopStretchPending = true;
-  // Show subtle indicator without stopping playback
-  const origStatus = looperStatus.textContent;
-  looperStatus.textContent = "↻ Adjusting speed…";
-
-  // Run WSOLA in a micro-task so the UI stays responsive
-  setTimeout(() => {
-    const newBuf = wsola(loopBuffer, rate);
-    loopStretchedBuffer = newBuf;
-    loopStretchPending = false;
-
-    // Seamless swap: if playing, wait for current loop end then swap
-    if (loopState === "playing") {
-      swapLoopBuffer(newBuf);
-    }
-    looperStatus.textContent = loopBuffer
-      ? (loopState === "playing"
-          ? "▶ Loop — " + Math.round(rate*100) + "%"
-          : "Sample ready — " + loopBuffer.duration.toFixed(2) + "s")
-      : "Press REC to start";
-    looperStatus.className = loopState === "playing" ? "looper-status playing" : "looper-status";
-  }, 10);
-}
-
-function swapLoopBuffer(newBuf) {
-  if (!loopCtx || loopState !== "playing") return;
-  // Calculate position in current loop cycle
-  const elapsed = (loopCtx.currentTime - loopStartTime) % loopDuration;
-  const progress = elapsed / loopDuration;
-  const newDuration = newBuf.duration;
-  const newStartOffset = progress * newDuration;
-
-  // Stop old source silently
-  if (loopSource) { try { loopSource.stop(); } catch(e) {} loopSource = null; }
-
-  // Start new source at equivalent position
-  loopSource = loopCtx.createBufferSource();
-  loopSource.buffer = newBuf;
-  loopSource.loop = true;
-  loopSource.connect(loopGain);
-  loopSource.start(0, newStartOffset);
-
-  loopDuration = newDuration;
-  loopStartTime = loopCtx.currentTime - newStartOffset;
-}
-
-async function ensureLoopCtx() {
-  if (loopCtx) return true;
-  try {
-    loopStream = await navigator.mediaDevices.getUserMedia({ audio: {
-    echoCancellation: false,
-    noiseSuppression: false,
-    autoGainControl: false
-  }});
-    loopCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // iOS: forza output su speaker principale invece dell'earpiece
-    try {
-      const audioEl = document.getElementById("ios-speaker-unlock");
-      // Genera un silenzio brevissimo come blob audio
-      const silenceData = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-      audioEl.src = silenceData;
-      audioEl.setAttribute("playsinline", "");
-      await audioEl.play().catch(()=>{});
-    } catch(e) {}
-    return true;
-  } catch(e) { alert("Cannot access microphone:\n" + e.message); return false; }
-}
-
-// ── Trim silence + crossfade ──────────────────
-function trimAndCrossfade(buffer) {
-  const sr = buffer.sampleRate, ch = buffer.numberOfChannels;
-  const data = [];
-  for (let i = 0; i < ch; i++) data.push(buffer.getChannelData(i));
-  const THRESH = 0.02, FRAME = 256, len = data[0].length;
-  let startS = 0, endS = len;
-  for (let i = 0; i < len - FRAME; i += FRAME) {
-    let rms = 0; for (let j = 0; j < FRAME; j++) rms += data[0][i+j]**2;
-    if (Math.sqrt(rms/FRAME) > THRESH) { startS = Math.max(0, i - FRAME); break; }
-  }
-  for (let i = len - FRAME; i > startS; i -= FRAME) {
-    let rms = 0; for (let j = 0; j < FRAME; j++) rms += data[0][i+j]**2;
-    if (Math.sqrt(rms/FRAME) > THRESH) { endS = Math.min(len, i + FRAME*2); break; }
-  }
-  const trimLen = endS - startS;
-  if (trimLen < sr * 0.1) return buffer;
-  const xfLen = Math.min(Math.floor(sr * 0.03), Math.floor(trimLen * 0.1));
-  const out = loopCtx.createBuffer(ch, trimLen, sr);
-  for (let c2 = 0; c2 < ch; c2++) {
-    const src = data[c2], dst = out.getChannelData(c2);
-    for (let i = 0; i < trimLen; i++) dst[i] = src[startS + i];
-    for (let i = 0; i < xfLen; i++) {
-      const t = i / xfLen;
-      dst[i] = dst[i] * t + dst[trimLen - xfLen + i] * (1 - t);
-    }
-    for (let i = trimLen - xfLen; i < trimLen; i++) {
-      dst[i] = dst[i] * (1 - (i - (trimLen - xfLen)) / xfLen);
-    }
-  }
-  return out;
-}
-
-// ── WSOLA time-stretch (pitch-preserving) ─────
-// Returns a new AudioBuffer stretched to targetRate (0.25–1.0)
-function wsola(buffer, rate) {
-  if (Math.abs(rate - 1.0) < 0.01) return buffer;
-
-  const sr = buffer.sampleRate;
-  const ch = buffer.numberOfChannels;
-  const inLen = buffer.length;
-  const outLen = Math.round(inLen / rate);
-
-  // Parameters tuned for guitar (200ms frames, 25ms hop)
-  const frameSize = Math.round(sr * 0.08);   // 80ms analysis frame
-  const hopOut    = Math.round(sr * 0.02);   // 20ms output hop
-  const hopIn     = Math.round(hopOut * rate); // scaled input hop
-
-  const outBuf = loopCtx.createBuffer(ch, outLen, sr);
-
-  for (let c2 = 0; c2 < ch; c2++) {
-    const inp = buffer.getChannelData(c2);
-    const out = outBuf.getChannelData(c2);
-    // Hann window
-    const win = new Float32Array(frameSize);
-    for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2*Math.PI*i/(frameSize-1)));
-
-    let inPos = 0;   // read cursor in input
-    let outPos = 0;  // write cursor in output
-
-    while (outPos + frameSize < outLen && inPos + frameSize < inLen) {
-      // Find best match near inPos via cross-correlation in a search window
-      const searchRadius = Math.round(hopIn * 0.5);
-      const searchStart = Math.max(0, inPos - searchRadius);
-      const searchEnd   = Math.min(inLen - frameSize, inPos + searchRadius);
-
-      let bestOffset = inPos;
-      let bestCorr = -Infinity;
-
-      // Reference: frame at previous inPos (already written region mapped back)
-      // Use the last written output frame as reference
-      const refStart = Math.max(0, outPos - hopOut);
-      const refLen   = Math.min(frameSize, outPos - refStart);
-
-      if (refLen > 16) {
-        for (let s = searchStart; s <= searchEnd; s += 4) { // stride 4 for speed
-          let corr = 0;
-          for (let k = 0; k < refLen; k++) corr += out[refStart + k] * (inp[s + k] || 0);
-          if (corr > bestCorr) { bestCorr = corr; bestOffset = s; }
-        }
-      } else {
-        bestOffset = inPos;
-      }
-
-      // OLA: add windowed frame at bestOffset into output at outPos
-      for (let k = 0; k < frameSize && outPos + k < outLen && bestOffset + k < inLen; k++) {
-        out[outPos + k] += inp[bestOffset + k] * win[k];
-      }
-
-      inPos  = bestOffset + hopIn;
-      outPos += hopOut;
-    }
-
-    // Normalize to remove OLA gain artifacts
-    // Find peak
-    let peak = 0;
-    for (let i = 0; i < outLen; i++) if (Math.abs(out[i]) > peak) peak = Math.abs(out[i]);
-    if (peak > 0.01) { const scale = Math.min(1.0, 0.95 / peak); for (let i = 0; i < outLen; i++) out[i] *= scale; }
-  }
-
-  return outBuf;
-}
-
-async function looperRec() {
-  if (loopState === "recording") return;
-  if (loopState === "playing") looperStop();
-  if (!await ensureLoopCtx()) return;
-
-  // Auto-mute metronomo
-  metroMuteForRec(true);
-
-  recordedChunks = []; loopBuffer = null; loopStretchedBuffer = null;
-  drawWaveform(null); loopProgress.style.width = "0%";
-
-  mediaRecorder = new MediaRecorder(loopStream);
-  mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
-  mediaRecorder.onstop = async () => {
-    metroMuteForRec(false);
-    looperStatus.textContent = "Processing…"; looperStatus.className = "looper-status processing";
-    const blob = new Blob(recordedChunks, { type: "audio/webm" });
-    const raw = await loopCtx.decodeAudioData(await blob.arrayBuffer());
-    loopBuffer = trimAndCrossfade(raw);
-    loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
-    loopDuration = loopStretchedBuffer.duration;
-    drawWaveform(loopBuffer);
-    looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
-    looperStatus.className = "looper-status";
-    lbtnPlay.disabled = false; lbtnClear.disabled = false; lbtnRec.classList.remove("rec-active");
-    loopSpeedSlider.disabled = false;
-  };
-
-  mediaRecorder.start();
-  loopState = "recording";
-  looperStatus.textContent = "● Recording…"; looperStatus.className = "looper-status recording";
-  lbtnRec.classList.add("rec-active"); lbtnStop.disabled = false; lbtnPlay.disabled = true;
-}
-
-function looperPlay() {
-  if (!loopStretchedBuffer || loopState === "recording") return;
-  if (loopState === "playing") { looperStop(); return; }
-
-  loopGain = loopCtx.createGain();
-  loopGain.gain.value = parseInt(loopVolSlider.value) / 100;
-  loopCompressor = loopCtx.createDynamicsCompressor();
-  loopCompressor.threshold.value = -24;
-  loopCompressor.knee.value = 10;
-  loopCompressor.ratio.value = 4;
-  loopCompressor.attack.value = 0.003;
-  loopCompressor.release.value = 0.1;
-  loopGain.connect(loopCompressor);
-  loopCompressor.connect(loopCtx.destination);
-
-  loopSource = loopCtx.createBufferSource();
-  loopSource.buffer = loopStretchedBuffer;
-  loopSource.loop = true;
-  loopSource.connect(loopGain);
-  loopSource.start();
-  loopStartTime = loopCtx.currentTime; loopDuration = loopStretchedBuffer.duration;
-  loopState = "playing";
-  looperStatus.textContent = `▶ Loop — ${Math.round(loopSpeed*100)}%`; looperStatus.className = "looper-status playing";
-  lbtnPlay.classList.add("play-active"); lbtnPlay.querySelector(".licon").textContent = "⏸";
-  lbtnStop.disabled = false;
-  animateProgress();
-}
-
-function looperStop() {
-  if (loopSource) { try { loopSource.stop(); } catch(e) {} loopSource = null; }
-  if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
-  if (loopAnimRaf) { cancelAnimationFrame(loopAnimRaf); loopAnimRaf = null; }
-  loopState = "idle"; loopProgress.style.width = "0%";
-  looperStatus.textContent = loopBuffer ? `Sample ready — ${loopBuffer.duration.toFixed(2)}s` : "Press REC to start";
-  looperStatus.className = "looper-status";
-  lbtnPlay.classList.remove("play-active"); lbtnPlay.querySelector(".licon").textContent = "▶";
-  lbtnRec.classList.remove("rec-active"); lbtnStop.disabled = true;
-  if (loopBuffer) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
-}
-
-function looperClear() {
-  looperStop();
-  loopBuffer = null; loopStretchedBuffer = null; loopDuration = 0;
-  loopSpeedSlider.value = 100; loopSpeedVal.textContent = "100%"; loopSpeed = 1.0; loopSpeedSlider.disabled = true;
-  drawWaveform(null);
-  looperStatus.textContent = "Press REC to start"; looperStatus.className = "looper-status";
-  lbtnPlay.disabled = true; lbtnClear.disabled = true; lbtnStop.disabled = true;
-}
-
-function animateProgress() {
-  if (loopState !== "playing") return;
-  const elapsed = (loopCtx.currentTime - loopStartTime) % loopDuration;
-  loopProgress.style.width = ((elapsed / loopDuration) * 100).toFixed(1) + "%";
-  loopAnimRaf = requestAnimationFrame(animateProgress);
-}
-
-function drawWaveform(buffer) {
-  const w = loopCanvas.offsetWidth || 300, h = 60;
-  loopCanvas.width = w; loopCanvas.height = h;
-  loopCtx2d.fillStyle = "#050a03"; loopCtx2d.fillRect(0, 0, w, h);
-  if (!buffer) {
-    loopCtx2d.strokeStyle = "#1a7a0a"; loopCtx2d.lineWidth = 1;
-    loopCtx2d.beginPath(); loopCtx2d.moveTo(0, h/2); loopCtx2d.lineTo(w, h/2); loopCtx2d.stroke();
-    return;
-  }
-  const data = buffer.getChannelData(0), step = Math.ceil(data.length / w);
-  loopCtx2d.strokeStyle = "#39ff14"; loopCtx2d.lineWidth = 1.5; loopCtx2d.beginPath();
-  for (let i = 0; i < w; i++) {
-    let mn = 1, mx = -1;
-    for (let j = 0; j < step; j++) { const v = data[i*step+j]||0; if(v<mn)mn=v; if(v>mx)mx=v; }
-    const y1 = ((1+mn)/2)*h, y2 = ((1+mx)/2)*h;
-    if (i===0) loopCtx2d.moveTo(i,y1); else loopCtx2d.lineTo(i,y1);
-    loopCtx2d.lineTo(i,y2);
-  }
-  loopCtx2d.stroke();
-}
-
-drawWaveform(null);
-
-// ════════════════════════════════════════════════
-//  METRONOME
-// ════════════════════════════════════════════════
-let metroBpm = 120, metroBeats = 4;
-let metroRunning = false, metroMuted = false;
-let metroNextTime = 0, metroCurBeat = 0, metroSchedulerId = null;
-let metroCtx = null;
-
-const metroToggleBtn = document.getElementById("metro-toggle");
-const metroBpmValEl  = document.getElementById("metro-bpm-val");
-const metroBeatsEl   = document.getElementById("metro-beats");
-const metroMutedNote = document.getElementById("metro-muted-note");
-
-function buildMetroBeats() {
-  metroBeatsEl.innerHTML = "";
-  for (let i = 0; i < metroBeats; i++) {
-    const d = document.createElement("div");
-    d.className = "metro-beat" + (i===0?" accent":"");
-    metroBeatsEl.appendChild(d);
-  }
-}
-buildMetroBeats();
-
-function metroBpmChange(v) { metroBpm = parseInt(v); metroBpmValEl.textContent = metroBpm; }
-function metroAdjBpm(delta) {
-  metroBpm = Math.max(40, Math.min(240, metroBpm + delta));
-  document.getElementById("metro-bpm").value = metroBpm;
-  metroBpmValEl.textContent = metroBpm;
-}
-
-function metroSig(beats, btn) {
-  document.querySelectorAll(".metro-sig-btn").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active"); metroBeats = beats; metroCurBeat = 0; buildMetroBeats();
-}
-
-function ensureMetroCtx() {
-  if (!metroCtx) metroCtx = loopCtx || new (window.AudioContext || window.webkitAudioContext)();
-  if (metroCtx.state === "suspended") metroCtx.resume();
-}
-
-function metroSchedule() {
-  if (!metroRunning) return;
-  ensureMetroCtx();
-  const interval = 60 / metroBpm;
-  while (metroNextTime < metroCtx.currentTime + 0.1) {
-    scheduleTick(metroNextTime, metroCurBeat);
-    metroNextTime += interval;
-    metroCurBeat = (metroCurBeat + 1) % metroBeats;
-  }
-  metroSchedulerId = setTimeout(metroSchedule, 25);
-}
-
-function scheduleTick(time, beat) {
-  const isAccent = beat === 0;
-  if (!metroMuted) {
-    const osc = metroCtx.createOscillator(), env = metroCtx.createGain();
-    osc.connect(env); env.connect(metroCtx.destination);
-    osc.frequency.value = isAccent ? 1000 : 700;
-    env.gain.setValueAtTime(isAccent ? 0.6 : 0.35, time);
-    env.gain.exponentialRampToValueAtTime(0.001, time + 0.04);
-    osc.start(time); osc.stop(time + 0.05);
-  }
-  const delay = Math.max(0, (time - metroCtx.currentTime) * 1000);
-  setTimeout(() => { flashBeat(beat); trainerOnBeat(); }, delay);
-}
-
-function flashBeat(beat) {
-  const dots = metroBeatsEl.querySelectorAll(".metro-beat");
-  dots.forEach((d, i) => d.classList.toggle("lit", i === beat));
-  clearTimeout(flashBeat._off);
-  flashBeat._off = setTimeout(() => dots.forEach(d => d.classList.remove("lit")), 80);
-}
-
-function metroMuteForRec(mute) {
-  metroMuted = mute;
-  metroMutedNote.textContent = mute ? "🔇 Audio muted during recording" : "";
-}
-
-function metroToggle() {
-  if (metroRunning) {
-    metroRunning = false; clearTimeout(metroSchedulerId);
-    metroBeatsEl.querySelectorAll(".metro-beat").forEach(d => d.classList.remove("lit"));
-    metroToggleBtn.textContent = "▶"; metroToggleBtn.className = "metro-toggle";
-  } else {
-    ensureMetroCtx();
-    metroRunning = true; metroCurBeat = 0;
-    metroNextTime = metroCtx.currentTime + 0.05;
-    metroToggleBtn.textContent = "⏹"; metroToggleBtn.className = "metro-toggle on";
-    metroSchedule();
-  }
-}
-
-// ════════════════════════════════════════════════
-//  BPM TRAINER
-// ════════════════════════════════════════════════
-let trainerRunning = false;
-let trainerStep = 2;          // BPM per scatto
-let trainerPeriod = 4;        // beatstute per scatto
-let trainerTarget = 160;
-let trainerBeatCount = 0;     // contatore beatstiti dall'ultimo scatto
-let trainerStartBpm = 120;
-
-const trainerToggleBtn  = document.getElementById("trainer-toggle");
-const trainerStepValEl  = document.getElementById("trainer-step-val");
-const trainerStatusEl   = document.getElementById("trainer-status");
-const trainerPeriodSlider = document.getElementById("trainer-period");
-const trainerTargetSlider = document.getElementById("trainer-target");
-
-function trainerPeriodChange(v) {
-  trainerPeriod = parseInt(v);
-  document.getElementById("trainer-period-val").textContent = v + " bt";
-}
-function trainerPeriodAdj(delta) {
-  trainerPeriod = Math.max(1, Math.min(32, trainerPeriod + delta));
-  document.getElementById("trainer-period").value = trainerPeriod;
-  document.getElementById("trainer-period-val").textContent = trainerPeriod + " bt";
-}
-
-function trainerTargetChange(v) {
-  trainerTarget = parseInt(v);
-  document.getElementById("trainer-target-val").textContent = v;
-}
-
-function trainerStepAdj(delta) {
-  trainerStep = Math.max(1, Math.min(20, trainerStep + delta));
-  trainerStepValEl.textContent = (trainerStep > 0 ? "+" : "") + trainerStep;
-}
-
-function trainerToggle() {
-  if (trainerRunning) {
-    trainerRunning = false;
-    trainerToggleBtn.textContent = "▶";
-    trainerToggleBtn.className = "trainer-toggle";
-    trainerStatusEl.textContent = "";
-    trainerBeatCount = 0;
-  } else {
-    // Il metronomo deve essere acceso
-    if (!metroRunning) metroToggle();
-    trainerRunning = true;
-    trainerStartBpm = metroBpm;
-    trainerBeatCount = 0;
-    trainerToggleBtn.textContent = "⏹";
-    trainerToggleBtn.className = "trainer-toggle on";
-    trainerUpdateStatus();
-  }
-}
-
-function trainerUpdateStatus() {
-  if (!trainerRunning) return;
-  const remaining = trainerPeriod - (trainerBeatCount % trainerPeriod);
-  trainerStatusEl.textContent = metroBpm + " BPM → target " + trainerTarget + " | next step in " + remaining + " bt";
-}
-
-// Agganciato al tick del metronomo — chiamato da scheduleTick su beat 0 di ogni misura
-// ma contiamo ogni singolo beat per granularità
-function trainerOnBeat() {
-  if (!trainerRunning) return;
-  trainerBeatCount++;
-  if (trainerBeatCount % trainerPeriod === 0) {
-    // Step increment
-    const dir = trainerStep >= 0 ? 1 : -1;
-    const newBpm = metroBpm + trainerStep;
-    if ((trainerStep > 0 && newBpm >= trainerTarget) || (trainerStep < 0 && newBpm <= trainerTarget)) {
-      // Raggiunto target
-      metroBpm = trainerTarget;
-      document.getElementById("metro-bpm").value = trainerTarget;
-      metroBpmValEl.textContent = trainerTarget;
-      trainerRunning = false;
-      trainerToggleBtn.textContent = "Start";
-      trainerToggleBtn.className = "trainer-toggle";
-      trainerStatusEl.textContent = "✓ Target " + trainerTarget + " BPM reached!";
-      return;
-    }
-    metroBpm = Math.max(40, Math.min(240, newBpm));
-    document.getElementById("metro-bpm").value = metroBpm;
-    metroBpmValEl.textContent = metroBpm;
-  }
-  trainerUpdateStatus();
-}
-
-
-// ════════════════════════════════════════════════
-//  CHORD FINDER
-// ════════════════════════════════════════════════
-const CHORD_NOTE_NAMES = ["C","C#","D","D#","E","F","F#","G","G#","A","A#","B"];
-
-// Chord templates: [name, intervals from root]
-// intervals are semitone offsets from root (mod 12)
-const CHORD_TEMPLATES = [
-  // Triads
-  ["",        [0,4,7]],
-  ["m",       [0,3,7]],
-  ["dim",     [0,3,6]],
-  ["aug",     [0,4,8]],
-  ["sus2",    [0,2,7]],
-  ["sus4",    [0,5,7]],
-  // Sevenths
-  ["maj7",    [0,4,7,11]],
-  ["7",       [0,4,7,10]],
-  ["m7",      [0,3,7,10]],
-  ["mMaj7",   [0,3,7,11]],
-  ["dim7",    [0,3,6,9]],
-  ["m7b5",    [0,3,6,10]],
-  ["aug7",    [0,4,8,10]],
-  ["augMaj7", [0,4,8,11]],
-  ["7sus4",   [0,5,7,10]],
-  // Sixths
-  ["6",       [0,4,7,9]],
-  ["m6",      [0,3,7,9]],
-  ["6/9",     [0,4,7,9,2]],
-  // Ninths
-  ["maj9",    [0,4,7,11,2]],
-  ["9",       [0,4,7,10,2]],
-  ["m9",      [0,3,7,10,2]],
-  ["add9",    [0,4,7,2]],
-  ["madd9",   [0,3,7,2]],
-  ["9sus4",   [0,5,7,10,2]],
-  // Elevenths
-  ["11",      [0,4,7,10,2,5]],
-  ["m11",     [0,3,7,10,2,5]],
-  ["maj11",   [0,4,7,11,2,5]],
-  // Thirteenths
-  ["13",      [0,4,7,10,2,5,9]],
-  ["maj13",   [0,4,7,11,2,5,9]],
-  ["m13",     [0,3,7,10,2,5,9]],
-  // Power
-  ["5",       [0,7]],
-];
-
-// Build lookup: for every root × template → pitch class set
-// Returns best match given a set of detected pitch classes
-function matchChord(pcSet) {
-  if (pcSet.size < 2) return null;
-  let best = null, bestScore = -1;
-
-  for (let root = 0; root < 12; root++) {
-    for (const [name, intervals] of CHORD_TEMPLATES) {
-      const chordPcs = new Set(intervals.map(i => (root + i) % 12));
-      let matched = 0;
-      for (const pc of chordPcs) if (pcSet.has(pc)) matched++;
-      const coverage = matched / chordPcs.size;   // how much of chord is covered
-      const precision = matched / pcSet.size;     // how many detected notes fit
-      // Require good coverage AND precision — prevents large chords eating small sets
-      if (matched < 2 || coverage < 0.65 || precision < 0.5) continue;
-      // Bonus for perfect match, penalty for larger chords with same coverage
-      const exactBonus = (matched === chordPcs.size && matched === pcSet.size) ? 0.15 : 0;
-      const sizepenalty = chordPcs.size > pcSet.size ? (chordPcs.size - pcSet.size) * 0.04 : 0;
-      const score = coverage * 0.55 + precision * 0.45 + exactBonus - sizepenalty;
-      if (score > bestScore) {
-        bestScore = score;
-        best = { root, name, chordPcs, score, coverage, matched };
-      }
-    }
-  }
-  return best;
-}
-
-// Inversion/slash chord: bass note != root
-function getSlashChord(match, bassPC) {
-  if (bassPC === match.root) return null;
-  const bassName = CHORD_NOTE_NAMES[bassPC];
-  const rootName = CHORD_NOTE_NAMES[match.root];
-  return rootName + match.name + "/" + bassName;
-}
-
-// Enharmonic aliases
-const ENHARMONIC = { "C#":"Db","D#":"Eb","F#":"Gb","G#":"Ab","A#":"Bb" };
-function enharmonic(n) { return ENHARMONIC[n] || null; }
-
-let chordCtx = null, chordAnalyser = null, chordMicStream = null;
-let chordRunning = false, chordRaf = null;
-let chordSens = 5;
-
-const chordStartBtn  = document.getElementById("chord-start-btn");
-const chordDot       = document.getElementById("chord-dot");
-const chordBtnLabel  = document.getElementById("chord-btn-label");
-const chordMain      = document.getElementById("chord-main");
-const chordSub       = document.getElementById("chord-sub");
-const chordNotesEl   = document.getElementById("chord-notes");
-const chordAliases   = document.getElementById("chord-aliases");
-const chordBarsEl    = document.getElementById("chord-bars");
-const chordSpecCanvas= document.getElementById("chord-spectrum");
-const chordSpecCtx   = chordSpecCanvas.getContext("2d");
-
-// Build 12 pitch class bars
-for (let i = 0; i < 12; i++) {
-  const b = document.createElement("div"); b.className = "chord-bar";
-  const lbl = document.createElement("div");
-  lbl.style.cssText = "font-size:9px;color:#aaa;text-align:center;margin-top:2px";
-  lbl.textContent = CHORD_NOTE_NAMES[i];
-  const wrap = document.createElement("div");
-  wrap.style.cssText = "flex:1;display:flex;flex-direction:column;align-items:stretch";
-  wrap.appendChild(b); wrap.appendChild(lbl);
-  chordBarsEl.appendChild(wrap);
-}
-
-function chordSensChange(v) { chordSens = parseInt(v); document.getElementById("chord-sens-val").textContent = v; }
-
-function getPitchClasses(analyser, ctx) {
-  const fftSize = analyser.fftSize;
-  const buf = new Float32Array(fftSize);
-  analyser.getFloatFrequencyData(buf);
-
-  const sr = ctx.sampleRate;
-  const binHz = sr / fftSize;
-
-  // Adaptive noise floor: median of all bins
-  const sorted = Array.from(buf).filter(v => v > -140).sort((a,b) => a-b);
-  const noiseFloor = sorted.length ? sorted[Math.floor(sorted.length * 0.4)] : -90;
-  // Threshold: noise floor + margin scaled by sensitivity
-  const margin = 18 - chordSens * 1.2; // sens=1 → +16dB, sens=10 → +6dB
-  const threshold = noiseFloor + margin;
-
-  // Guitar range bins
-  const minBin = Math.max(1, Math.floor(70 / binHz));
-  const maxBin = Math.min(buf.length - 1, Math.ceil(1400 / binHz));
-
-  // ── Step 1: Peak picking ──────────────────────
-  // Find local maxima above threshold with minimum distance
-  const minPeakDist = Math.max(1, Math.floor(15 / binHz)); // ~15Hz separation
-  const peaks = []; // { bin, mag, freq }
-
-  for (let i = minBin + 1; i < maxBin - 1; i++) {
-    if (buf[i] < threshold) continue;
-    if (buf[i] <= buf[i-1] || buf[i] <= buf[i+1]) continue; // not a local max
-    // Check it's highest in minPeakDist window
-    let isPeak = true;
-    for (let j = Math.max(minBin, i - minPeakDist); j <= Math.min(maxBin, i + minPeakDist); j++) {
-      if (j !== i && buf[j] >= buf[i]) { isPeak = false; break; }
-    }
-    if (!isPeak) continue;
-    // Parabolic interpolation for sub-bin accuracy
-    const alpha = buf[i-1], beta = buf[i], gamma = buf[i+1];
-    const denom = alpha - 2*beta + gamma;
-    const frac = denom !== 0 ? 0.5 * (alpha - gamma) / denom : 0;
-    const freq = (i + frac) * binHz;
-    peaks.push({ bin: i, mag: buf[i], freq });
-  }
-
-  if (peaks.length === 0) return { pcEnergy: new Float32Array(12), bassPC: -1 };
-
-  // ── Step 2: Harmonic suppression ─────────────
-  // For each peak, reduce energy of bins that are its harmonics
-  // Sort peaks by magnitude descending
-  peaks.sort((a, b) => b.mag - a.mag);
-  const suppressed = new Set();
-
-  for (let pi = 0; pi < peaks.length; pi++) {
-    if (suppressed.has(pi)) continue;
-    const f0 = peaks[pi].freq;
-    // Mark harmonics (2nd through 6th)
-    for (let h = 2; h <= 6; h++) {
-      const hFreq = f0 * h;
-      if (hFreq > 1400) break;
-      // Find any peak within 2% of this harmonic
-      for (let pj = pi + 1; pj < peaks.length; pj++) {
-        if (suppressed.has(pj)) continue;
-        const ratio = peaks[pj].freq / hFreq;
-        if (ratio > 0.98 && ratio < 1.02) {
-          suppressed.add(pj);
-        }
-      }
-    }
-  }
-
-  // ── Step 3: Build chroma from surviving peaks ─
-  const pcEnergy = new Float32Array(12);
-  let bassPC = -1, bassMaxMag = -Infinity;
-
-  for (let pi = 0; pi < peaks.length; pi++) {
-    if (suppressed.has(pi)) continue;
-    const { freq, mag } = peaks[pi];
-    const midi = 12 * Math.log2(freq / 440) + 69;
-    const pc = ((Math.round(midi) % 12) + 12) % 12;
-    // Weight: linear amplitude, not squared — favors fundamentals over noise
-    const amp = Math.pow(10, mag / 20);
-    pcEnergy[pc] += amp;
-    // Bass: lowest unsuppressed peak below 330Hz
-    if (freq < 330 && mag > bassMaxMag) { bassMaxMag = mag; bassPC = pc; }
-  }
-
-  return { pcEnergy, bassPC };
-}
-
-let chordHistory = [], chordHistorySize = 4;
-
-function chordUpdate() {
-  if (!chordAnalyser) return;
-  chordRaf = requestAnimationFrame(chordUpdate);
-
-  const { pcEnergy, bassPC } = getPitchClasses(chordAnalyser, chordCtx);
-
-  // Draw spectrum
-  const fftBuf = new Float32Array(chordAnalyser.frequencyBinCount);
-  chordAnalyser.getFloatFrequencyData(fftBuf);
-  const sw = chordSpecCanvas.offsetWidth || 300;
-  chordSpecCanvas.width = sw; chordSpecCanvas.height = 50;
-  chordSpecCtx.fillStyle = "#050a03"; chordSpecCtx.fillRect(0, 0, sw, 50);
-  chordSpecCtx.strokeStyle = "#39ff14"; chordSpecCtx.lineWidth = 1.5;
-  chordSpecCtx.beginPath();
-  const step = Math.floor(fftBuf.length / sw);
-  for (let x = 0; x < sw; x++) {
-    let mx = -Infinity;
-    for (let j = 0; j < step; j++) mx = Math.max(mx, fftBuf[x*step+j]||(-140));
-    const y = ((mx + 140) / 100) * 50;
-    x === 0 ? chordSpecCtx.moveTo(x, 50-y) : chordSpecCtx.lineTo(x, 50-y);
-  }
-  chordSpecCtx.stroke();
-
-  // Normalize pc energies
-  const maxE = Math.max(...pcEnergy);
-  if (maxE < 1e-6) return;
-  const normE = Array.from(pcEnergy).map(e => e / maxE);
-
-  // Threshold: include PCs with relative energy > 15%
-  const THRESH = 0.15;
-  const activePCs = new Set();
-  normE.forEach((e, i) => { if (e > THRESH) activePCs.add(i); });
-
-  // Update bars
-  const bars = chordBarsEl.querySelectorAll(".chord-bar");
-  normE.forEach((e, i) => {
-    const h = Math.max(2, e * 34);
-    bars[i].style.height = h + "px";
-    bars[i].className = "chord-bar";
-  });
-
-  // Match chord with stability buffer
-  const match = matchChord(activePCs);
-  const matchKey = match ? (match.root + "_" + match.name) : "";
-  chordHistory.push(matchKey);
-  if (chordHistory.length > chordHistorySize) chordHistory.shift();
-  // Only display if last N frames agree
-  const stableMatch = chordHistory.length === chordHistorySize &&
-    chordHistory.every(k => k === matchKey) && match;
-
-  if (stableMatch) {
-    const rootName = CHORD_NOTE_NAMES[match.root];
-    chordMain.textContent = rootName + match.name;
-
-    // Color bars
-    activePCs.forEach(pc => {
-      bars[pc].classList.add(pc === match.root ? "root" : "active");
-    });
-
-    // Notes in chord
-    chordNotesEl.innerHTML = "";
-    // Sort detected PCs: root first, then others
-    const sorted = [match.root, ...[...activePCs].filter(p => p !== match.root).sort((a,b)=>((a-match.root+12)%12)-((b-match.root+12)%12))];
-    sorted.forEach(pc => {
-      if (!activePCs.has(pc)) return;
-      const pill = document.createElement("span");
-      pill.className = "chord-note-pill" + (pc === match.root ? " root" : "");
-      pill.textContent = CHORD_NOTE_NAMES[pc];
-      chordNotesEl.appendChild(pill);
-    });
-
-    // Slash chord
-    const slashName = (bassPC >= 0 && bassPC !== match.root) ? getSlashChord(match, bassPC) : null;
-    chordSub.textContent = slashName ? "anche: " + slashName : (match.name === "" ? "accordo maggiore" : "");
-
-    // Aliases
-    const aliasParts = [];
-    const enh = enharmonic(rootName);
-    if (enh) aliasParts.push(enh + match.name);
-    if (slashName) {
-      const slashRoot = slashName.split("/")[0];
-      const enhSlash = enharmonic(CHORD_NOTE_NAMES[match.root]);
-      if (enhSlash) aliasParts.push(enhSlash + match.name + "/" + CHORD_NOTE_NAMES[bassPC]);
-    }
-    chordAliases.textContent = aliasParts.length ? "≡ " + aliasParts.join("  ") : "";
-  } else if (activePCs.size > 0 && !stableMatch) {
-    // Don't flash "?" — keep last valid chord or show "..." while stabilizing
-    if (!match) {
-      chordMain.textContent = "···";
-      chordSub.textContent = ""; chordNotesEl.innerHTML = ""; chordAliases.textContent = "";
-    }
-    [...activePCs].forEach(pc => bars[pc].classList.add("active"));
-  } else if (activePCs.size === 0) {
-    chordMain.textContent = "—";
-    chordSub.textContent = ""; chordNotesEl.innerHTML = ""; chordAliases.textContent = "";
-    chordHistory = [];
-  }
-}
-
-chordStartBtn.onclick = async () => {
-  if (chordRunning) {
-    chordRunning = false;
-    if (chordRaf) cancelAnimationFrame(chordRaf);
-    if (chordMicStream) chordMicStream.getTracks().forEach(t => t.stop());
-    if (chordCtx) chordCtx.close();
-    chordCtx = chordAnalyser = chordMicStream = null;
-    chordDot.className = "dot"; chordBtnLabel.textContent = "Start microphone";
-    chordStartBtn.className = "start-btn";
-    chordMain.textContent = "—"; chordSub.textContent = "";
-    chordNotesEl.innerHTML = ""; chordAliases.textContent = "";
-    return;
-  }
-  try {
-    chordMicStream = await navigator.mediaDevices.getUserMedia({ audio: {
-      echoCancellation: false, noiseSuppression: false, autoGainControl: false
-    }});
-    chordCtx = new (window.AudioContext || window.webkitAudioContext)();
-    chordAnalyser = chordCtx.createAnalyser();
-    chordAnalyser.fftSize = 8192;       // alta risoluzione freq per accordi
-    chordAnalyser.smoothingTimeConstant = 0.82;
-    chordCtx.createMediaStreamSource(chordMicStream).connect(chordAnalyser);
-    chordRunning = true;
-    chordDot.className = "dot on"; chordBtnLabel.textContent = "Stop microphone";
-    chordStartBtn.className = "start-btn active";
-    requestAnimationFrame(chordUpdate);
-  } catch(e) { alert("Cannot access microphone:\n" + e.message); }
-};
-
-
-// ════════════════════════════════════════════════
-//  PITCH PIPE
-// ════════════════════════════════════════════════
-let pipeCtx = null, pipeOsc = null, pipeGain = null, pipeRunning = false, pipeIntervalId = null;
-const pipeDot   = document.getElementById("pipe-dot");
-const pipeLabel = document.getElementById("pipe-label");
-const pipeBtn   = document.getElementById("pipe-btn");
-
-function pipeToggle() {
-  if (pipeRunning) {
-    pipeStop();
-  } else {
-    pipeStart();
-  }
-}
-
-function pipeStart() {
-  const freq = noteToFreq(tunings[currentTuning][selectedString]);
-  if (!freq) return;
-  if (!pipeCtx) pipeCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (pipeCtx.state === "suspended") pipeCtx.resume();
-
-  pipeRunning = true;
-  pipeDot.className = "dot on";
-  pipeLabel.textContent = "Stop reference note";
-  pipeBtn.className = "start-btn active";
-
-  playPipeNote(freq);
-  // Ripete ogni 2.5 secondi
-  pipeIntervalId = setInterval(() => {
-    const f = noteToFreq(tunings[currentTuning][selectedString]);
-    if (f) playPipeNote(f);
-  }, 2500);
-}
-
-function playPipeNote(freq) {
-  // Stop previous note if playing
-  if (pipeOsc) { try { pipeOsc.stop(); } catch(e){} pipeOsc = null; }
-
-  pipeGain = pipeCtx.createGain();
-  pipeGain.gain.setValueAtTime(0, pipeCtx.currentTime);
-  pipeGain.gain.linearRampToValueAtTime(0.4, pipeCtx.currentTime + 0.01);
-  pipeGain.gain.setValueAtTime(0.4, pipeCtx.currentTime + 1.2);
-  pipeGain.gain.linearRampToValueAtTime(0, pipeCtx.currentTime + 2.0);
-  pipeGain.connect(pipeCtx.destination);
-
-  // Main oscillator + sub octave for body
-  pipeOsc = pipeCtx.createOscillator();
-  pipeOsc.type = "triangle";
-  pipeOsc.frequency.value = freq;
-  pipeOsc.connect(pipeGain);
-  pipeOsc.start();
-  pipeOsc.stop(pipeCtx.currentTime + 2.0);
-
-  // Light sub octave
-  const sub = pipeCtx.createOscillator();
-  const subGain = pipeCtx.createGain();
-  sub.type = "sine";
-  sub.frequency.value = freq / 2;
-  subGain.gain.value = 0.15;
-  sub.connect(subGain); subGain.connect(pipeGain);
-  sub.start(); sub.stop(pipeCtx.currentTime + 2.0);
-}
-
-function pipeStop() {
-  pipeRunning = false;
-  clearInterval(pipeIntervalId);
-  if (pipeOsc) { try { pipeOsc.stop(); } catch(e){} pipeOsc = null; }
-  pipeDot.className = "dot";
-  pipeLabel.textContent = "Play reference note";
-  pipeBtn.className = "start-btn";
-}
-
-// Stop pipe if string or tuning changes
-const _origBuildStringBtns = buildStringBtns;
-buildStringBtns = function() { _origBuildStringBtns(); if (pipeRunning) { pipeStop(); pipeStart(); } };
-
-
-// ── PWA Service Worker ──────────────────────────
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  });
-}
-
-
-// ── PWA Install Banner ──────────────────────────
-let deferredInstallPrompt = null;
-const installBanner = document.getElementById("install-banner");
-const installBtn    = document.getElementById("install-btn");
-const installDismiss= document.getElementById("install-dismiss");
-
-window.addEventListener("beforeinstallprompt", e => {
-  e.preventDefault();
-  deferredInstallPrompt = e;
-  installBanner.style.display = "flex";
-});
-
-installBtn.onclick = async () => {
-  if (!deferredInstallPrompt) return;
-  deferredInstallPrompt.prompt();
-  const { outcome } = await deferredInstallPrompt.userChoice;
-  deferredInstallPrompt = null;
-  installBanner.style.display = "none";
-};
-
-installDismiss.onclick = () => {
-  installBanner.style.display = "none";
-};
-
-window.addEventListener("appinstalled", () => {
-  installBanner.style.display = "none";
-  deferredInstallPrompt = null;
-});
-
-</script>
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
