@@ -8,28 +8,27 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #f0efe8;
+    --bg: #f7f7f5;
     --surface: #ffffff;
-    --surface2: #f5f4ee;
-    --surface3: #eceae1;
-    --border: rgba(0,0,0,0.07);
-    --border-strong: rgba(0,0,0,0.13);
-    --text: #0f0f0e;
-    --text2: #555;
+    --surface2: #f2f2ef;
+    --surface3: #eaeae6;
+    --border: rgba(0,0,0,0.08);
+    --border-strong: rgba(0,0,0,0.14);
+    --text: #111;
+    --text2: #666;
     --text3: #999;
-    --accent: #1a56db;
-    --accent-light: #eef2ff;
-    --accent-dark: #1341a8;
+    --accent: #2563eb;
+    --accent-light: #eff4ff;
+    --accent-dark: #1d4ed8;
     --green: #16a34a;
     --green-light: #f0fdf4;
     --red: #dc2626;
-    --red-light: #fff1f1;
-    --radius-sm: 10px;
-    --radius-md: 14px;
-    --radius-lg: 20px;
-    --shadow-sm: 0 1px 4px rgba(0,0,0,0.07), 0 0.5px 1px rgba(0,0,0,0.05);
-    --shadow-md: 0 6px 20px rgba(0,0,0,0.08), 0 2px 6px rgba(0,0,0,0.05);
-    --shadow-inset: inset 0 1px 3px rgba(0,0,0,0.08);
+    --red-light: #fef2f2;
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 16px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.07), 0 2px 4px rgba(0,0,0,0.04);
   }
 
   body {
@@ -42,12 +41,11 @@
   }
 
   h1 {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     margin-bottom: 1rem;
-    letter-spacing: 0.5px;
-    text-transform: uppercase;
-    color: var(--text3);
+    letter-spacing: -0.3px;
+    color: var(--text);
   }
 
   /* ── Tabs ── */
@@ -104,73 +102,49 @@
 
   .strings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
   .string-btn {
-    padding: 14px 4px 11px;
+    padding: 12px 4px 10px;
     border-radius: var(--radius-md);
-    border: 1.5px solid var(--border);
+    border: 1px solid var(--border);
     background: var(--surface);
     color: var(--text);
     cursor: pointer;
     text-align: center;
     box-shadow: var(--shadow-sm);
-    transition: all 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s, transform 0.1s;
     -webkit-tap-highlight-color: transparent;
-    position: relative;
-    overflow: hidden;
   }
-  .string-btn::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 20%; right: 20%;
-    height: 2px;
-    border-radius: 2px;
-    background: var(--border-strong);
-    opacity: 0;
-    transition: opacity 0.15s;
-  }
-  .string-btn:active { transform: scale(0.96); }
-  .string-btn .note { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; }
-  .string-btn .freq { font-size: 10px; color: var(--text3); margin-top: 3px; font-weight: 500; letter-spacing: 0.3px; }
+  .string-btn:active { transform: scale(0.97); }
+  .string-btn .note { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; }
+  .string-btn .freq { font-size: 10px; color: var(--text3); margin-top: 3px; font-weight: 500; }
   .string-btn.selected {
     border-color: var(--accent);
     background: var(--accent-light);
     color: var(--accent-dark);
-    box-shadow: 0 0 0 3px rgba(26,86,219,0.14), var(--shadow-sm);
+    box-shadow: 0 0 0 3px rgba(37,99,235,0.12);
   }
-  .string-btn.selected::after { opacity: 1; background: var(--accent); }
   .string-btn.selected .freq { color: var(--accent); }
 
   .meter-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 1.5rem 1rem 1.25rem;
+    padding: 1.25rem 1rem 1rem;
     margin-bottom: 1rem;
     text-align: center;
     box-shadow: var(--shadow-md);
-    position: relative;
-    overflow: hidden;
   }
-  .meter-card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 3px;
-    background: linear-gradient(90deg, #86efac 0%, #4ade80 40%, #4ade80 60%, #f87171 100%);
-    opacity: 0.6;
-  }
-  .note-display { margin-bottom: 12px; }
   .detected-note {
-    font-size: 72px;
-    font-weight: 800;
+    font-size: 64px;
+    font-weight: 700;
     line-height: 1;
-    letter-spacing: -4px;
+    letter-spacing: -3px;
     color: var(--text);
-    transition: color 0.25s, transform 0.15s;
-    display: inline-block;
+    transition: color 0.2s;
   }
-  .detected-note.in-tune { color: var(--green); transform: scale(1.04); }
-  .detected-freq { font-size: 11px; color: var(--text3); margin-top: 2px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
-  .gauge-canvas { width: 100%; height: 100px; display: block; margin-bottom: 4px; }
+  .detected-note.in-tune { color: var(--green); }
+  .detected-freq { font-size: 12px; color: var(--text3); margin-top: 4px; margin-bottom: 16px; font-weight: 500; letter-spacing: 0.2px; }
+
+  svg.gauge { width: 100%; height: 90px; }
   .cents-label {
     font-size: 13px;
     font-weight: 500;
@@ -502,14 +476,22 @@
   <div class="tunings-row" id="tunings-row"></div>
   <div class="strings-grid" id="strings-grid"></div>
   <div class="meter-card">
-    <div class="note-display">
-      <div class="detected-note" id="detected-note">—</div>
-      <div class="detected-freq" id="detected-freq">0.0 Hz</div>
-    </div>
-    <canvas id="gauge-canvas" class="gauge-canvas"></canvas>
+    <div class="detected-note" id="detected-note">—</div>
+    <div class="detected-freq" id="detected-freq">0.0 Hz</div>
+    <svg class="gauge" viewBox="0 0 300 90" xmlns="http://www.w3.org/2000/svg">
+      <path d="M 30 85 A 120 120 0 0 1 270 85" fill="none" stroke="#e5e5e2" stroke-width="5" stroke-linecap="round"/>
+      <path d="M 30 85 A 120 120 0 0 1 150 85" fill="none" stroke="#86efac" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+      <path d="M 150 85 A 120 120 0 0 1 270 85" fill="none" stroke="#fca5a5" stroke-width="4" stroke-linecap="round" opacity="0.5"/>
+      <rect x="146" y="20" width="8" height="40" rx="4" fill="#16a34a" opacity="0.3"/>
+      <line id="needle" x1="150" y1="85" x2="150" y2="20" stroke="#2563eb" stroke-width="2.5" stroke-linecap="round" style="transition: x2 0.08s ease-out, y2 0.08s ease-out;"/>
+      <circle cx="150" cy="85" r="5" fill="#378ADD"/>
+      <text x="26" y="82" font-size="10" fill="#aaa" text-anchor="middle">−50</text>
+      <text x="274" y="82" font-size="10" fill="#aaa" text-anchor="middle">+50</text>
+      <text x="150" y="12" font-size="10" fill="#aaa" text-anchor="middle">0</text>
+    </svg>
     <div class="cents-label" id="cents-label">seleziona una corda e avvia</div>
     <div class="history-wrap">
-      <div class="history-label">Stabilità</div>
+      <div class="history-label">Stabilità ultimi 2 sec</div>
       <div class="history-bar" id="history-bar"></div>
     </div>
   </div>
@@ -765,123 +747,11 @@ document.getElementById("apply-btn").onclick = () => {
   buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory();
 };
 
-// ── Canvas gauge ───────────────────────────────
-const gaugeCanvas = document.getElementById("gauge-canvas");
-const gaugeCtx    = gaugeCanvas.getContext("2d");
-let gaugeNeedleAngle = -Math.PI / 2; // starts center
-let gaugeTargetAngle = -Math.PI / 2;
-let gaugeInTune = false;
-let gaugeAnimRaf = null;
-
-function resizeGauge() {
-  const w = gaugeCanvas.offsetWidth;
-  gaugeCanvas.width = w * window.devicePixelRatio;
-  gaugeCanvas.height = 100 * window.devicePixelRatio;
-  gaugeCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
-  drawGauge();
-}
-
-function drawGauge() {
-  const w = gaugeCanvas.offsetWidth, h = 100;
-  gaugeCtx.clearRect(0, 0, w, h);
-  const cx = w / 2, cy = h - 10, r = Math.min(w * 0.42, 78);
-
-  // Arc track
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.2, Math.PI * 1.8, false);  // wider arc -75 to +75 deg mapped to PI range
-  gaugeCtx.strokeStyle = "#e8e6de";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.lineCap = "round";
-  gaugeCtx.stroke();
-
-  // Colored zones
-  // Flat zone (left)
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.2, Math.PI * 1.5, false);
-  gaugeCtx.strokeStyle = "rgba(96,165,250,0.35)";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.stroke();
-
-  // Sharp zone (right)
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.5, Math.PI * 1.8, false);
-  gaugeCtx.strokeStyle = "rgba(248,113,113,0.35)";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.stroke();
-
-  // In-tune zone center
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, r, Math.PI * 1.46, Math.PI * 1.54, false);
-  gaugeCtx.strokeStyle = gaugeInTune ? "rgba(34,197,94,0.8)" : "rgba(34,197,94,0.3)";
-  gaugeCtx.lineWidth = 8;
-  gaugeCtx.stroke();
-
-  // Tick marks
-  for (let i = -5; i <= 5; i++) {
-    const angle = Math.PI * 1.5 + (i / 5) * Math.PI * 0.3;
-    const isMajor = i % 5 === 0;
-    const r1 = r + 4, r2 = r + (isMajor ? 10 : 6);
-    gaugeCtx.beginPath();
-    gaugeCtx.moveTo(cx + r1 * Math.cos(angle), cy + r1 * Math.sin(angle));
-    gaugeCtx.lineTo(cx + r2 * Math.cos(angle), cy + r2 * Math.sin(angle));
-    gaugeCtx.strokeStyle = isMajor ? "#999" : "#ccc";
-    gaugeCtx.lineWidth = isMajor ? 1.5 : 1;
-    gaugeCtx.stroke();
-  }
-
-  // Needle
-  const needleLen = r - 6;
-  const nx = cx + needleLen * Math.cos(gaugeNeedleAngle);
-  const ny = cy + needleLen * Math.sin(gaugeNeedleAngle);
-  // Shadow
-  gaugeCtx.beginPath();
-  gaugeCtx.moveTo(cx, cy);
-  gaugeCtx.lineTo(nx, ny);
-  gaugeCtx.strokeStyle = "rgba(0,0,0,0.08)";
-  gaugeCtx.lineWidth = 5;
-  gaugeCtx.lineCap = "round";
-  gaugeCtx.stroke();
-  // Needle body
-  gaugeCtx.beginPath();
-  gaugeCtx.moveTo(cx, cy);
-  gaugeCtx.lineTo(nx, ny);
-  gaugeCtx.strokeStyle = gaugeInTune ? "#16a34a" : "#1a56db";
-  gaugeCtx.lineWidth = 2.5;
-  gaugeCtx.stroke();
-  // Pivot
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, 5, 0, Math.PI * 2);
-  gaugeCtx.fillStyle = gaugeInTune ? "#16a34a" : "#1a56db";
-  gaugeCtx.fill();
-  // Pivot inner
-  gaugeCtx.beginPath();
-  gaugeCtx.arc(cx, cy, 2.5, 0, Math.PI * 2);
-  gaugeCtx.fillStyle = "#fff";
-  gaugeCtx.fill();
-}
-
-function animateGauge() {
-  const diff = gaugeTargetAngle - gaugeNeedleAngle;
-  if (Math.abs(diff) > 0.001) {
-    gaugeNeedleAngle += diff * 0.18;
-    drawGauge();
-    gaugeAnimRaf = requestAnimationFrame(animateGauge);
-  } else {
-    gaugeNeedleAngle = gaugeTargetAngle;
-    drawGauge();
-    gaugeAnimRaf = null;
-  }
-}
-
 function setNeedle(cents) {
-  const clamped = Math.max(-50, Math.min(50, cents));
-  // Map -50..+50 to PI*1.2..PI*1.8
-  gaugeTargetAngle = Math.PI * 1.5 + (clamped / 50) * Math.PI * 0.3;
-  if (!gaugeAnimRaf) gaugeAnimRaf = requestAnimationFrame(animateGauge);
+  const rad = ((Math.max(-50, Math.min(50, cents)) / 50) * 75 - 90) * Math.PI / 180;
+  needle.setAttribute("x2", (150 + 65 * Math.cos(rad)).toFixed(1));
+  needle.setAttribute("y2", (85 + 65 * Math.sin(rad)).toFixed(1));
 }
-
-resizeGauge();
-window.addEventListener("resize", resizeGauge);
 
 function autoCorrelate(buf, sr) {
   const SIZE = buf.length;
@@ -919,9 +789,9 @@ function tunerUpdate(ts) {
     let inTune = false, diff = cents;
     if (tf) {
       diff = Math.round(1200 * Math.log2(freq / tf));
-      if (Math.abs(diff) <= 5) { centsLabel.textContent = "✓ In accordo!"; centsLabel.className = "cents-label in-tune"; inTune = true; gaugeInTune = true; detectedNote.classList.add("in-tune"); }
-      else if (diff > 5) { centsLabel.textContent = `+${diff} cents — abbassa`; centsLabel.className = "cents-label sharp"; gaugeInTune = false; detectedNote.classList.remove("in-tune"); }
-      else { centsLabel.textContent = `${diff} cents — alza`; centsLabel.className = "cents-label flat"; gaugeInTune = false; detectedNote.classList.remove("in-tune"); }
+      if (Math.abs(diff) <= 5) { centsLabel.textContent = "✓ In accordo!"; centsLabel.className = "cents-label in-tune"; inTune = true; }
+      else if (diff > 5) { centsLabel.textContent = `+${diff} cents — abbassa`; centsLabel.className = "cents-label sharp"; }
+      else { centsLabel.textContent = `${diff} cents — alza`; centsLabel.className = "cents-label flat"; }
     }
     if (!lastHistoryTime || ts - lastHistoryTime > 100) { lastHistoryTime = ts; updateHistory(diff, inTune); }
   }
@@ -1508,17 +1378,14 @@ function matchChord(pcSet) {
   for (let root = 0; root < 12; root++) {
     for (const [name, intervals] of CHORD_TEMPLATES) {
       const chordPcs = new Set(intervals.map(i => (root + i) % 12));
+      // Score = matched notes / max(chord size, detected size)
       let matched = 0;
       for (const pc of chordPcs) if (pcSet.has(pc)) matched++;
-      const coverage = matched / chordPcs.size;   // how much of chord is covered
-      const precision = matched / pcSet.size;     // how many detected notes fit
-      // Require good coverage AND precision — prevents large chords eating small sets
-      if (matched < 2 || coverage < 0.65 || precision < 0.5) continue;
-      // Bonus for perfect match, penalty for larger chords with same coverage
-      const exactBonus = (matched === chordPcs.size && matched === pcSet.size) ? 0.15 : 0;
-      const sizepenalty = chordPcs.size > pcSet.size ? (chordPcs.size - pcSet.size) * 0.04 : 0;
-      const score = coverage * 0.55 + precision * 0.45 + exactBonus - sizepenalty;
-      if (score > bestScore) {
+      // Need at least 2 matched and ≥ 60% of chord covered
+      const coverage = matched / chordPcs.size;
+      const precision = matched / pcSet.size;
+      const score = coverage * 0.7 + precision * 0.3;
+      if (matched >= 2 && coverage >= 0.6 && score > bestScore) {
         bestScore = score;
         best = { root, name, chordPcs, score, coverage, matched };
       }
@@ -1575,86 +1442,33 @@ function getPitchClasses(analyser, ctx) {
 
   const sr = ctx.sampleRate;
   const binHz = sr / fftSize;
+  const threshold = -100 + chordSens * 5; // -95 to -50 dBFS
 
-  // Adaptive noise floor: median of all bins
-  const sorted = Array.from(buf).filter(v => v > -140).sort((a,b) => a-b);
-  const noiseFloor = sorted.length ? sorted[Math.floor(sorted.length * 0.4)] : -90;
-  // Threshold: noise floor + margin scaled by sensitivity
-  const margin = 18 - chordSens * 1.2; // sens=1 → +16dB, sens=10 → +6dB
-  const threshold = noiseFloor + margin;
-
-  // Guitar range bins
-  const minBin = Math.max(1, Math.floor(70 / binHz));
-  const maxBin = Math.min(buf.length - 1, Math.ceil(1400 / binHz));
-
-  // ── Step 1: Peak picking ──────────────────────
-  // Find local maxima above threshold with minimum distance
-  const minPeakDist = Math.max(1, Math.floor(15 / binHz)); // ~15Hz separation
-  const peaks = []; // { bin, mag, freq }
-
-  for (let i = minBin + 1; i < maxBin - 1; i++) {
-    if (buf[i] < threshold) continue;
-    if (buf[i] <= buf[i-1] || buf[i] <= buf[i+1]) continue; // not a local max
-    // Check it's highest in minPeakDist window
-    let isPeak = true;
-    for (let j = Math.max(minBin, i - minPeakDist); j <= Math.min(maxBin, i + minPeakDist); j++) {
-      if (j !== i && buf[j] >= buf[i]) { isPeak = false; break; }
-    }
-    if (!isPeak) continue;
-    // Parabolic interpolation for sub-bin accuracy
-    const alpha = buf[i-1], beta = buf[i], gamma = buf[i+1];
-    const denom = alpha - 2*beta + gamma;
-    const frac = denom !== 0 ? 0.5 * (alpha - gamma) / denom : 0;
-    const freq = (i + frac) * binHz;
-    peaks.push({ bin: i, mag: buf[i], freq });
-  }
-
-  if (peaks.length === 0) return { pcEnergy: new Float32Array(12), bassPC: -1 };
-
-  // ── Step 2: Harmonic suppression ─────────────
-  // For each peak, reduce energy of bins that are its harmonics
-  // Sort peaks by magnitude descending
-  peaks.sort((a, b) => b.mag - a.mag);
-  const suppressed = new Set();
-
-  for (let pi = 0; pi < peaks.length; pi++) {
-    if (suppressed.has(pi)) continue;
-    const f0 = peaks[pi].freq;
-    // Mark harmonics (2nd through 6th)
-    for (let h = 2; h <= 6; h++) {
-      const hFreq = f0 * h;
-      if (hFreq > 1400) break;
-      // Find any peak within 2% of this harmonic
-      for (let pj = pi + 1; pj < peaks.length; pj++) {
-        if (suppressed.has(pj)) continue;
-        const ratio = peaks[pj].freq / hFreq;
-        if (ratio > 0.98 && ratio < 1.02) {
-          suppressed.add(pj);
-        }
-      }
-    }
-  }
-
-  // ── Step 3: Build chroma from surviving peaks ─
+  // Accumulate energy per pitch class
   const pcEnergy = new Float32Array(12);
-  let bassPC = -1, bassMaxMag = -Infinity;
+  let bassPC = -1, bassMaxE = -Infinity;
 
-  for (let pi = 0; pi < peaks.length; pi++) {
-    if (suppressed.has(pi)) continue;
-    const { freq, mag } = peaks[pi];
+  // Only look at guitar range: ~80Hz (E2) to ~1320Hz (E6)
+  const minBin = Math.floor(80 / binHz);
+  const maxBin = Math.ceil(1400 / binHz);
+
+  for (let i = minBin; i < Math.min(maxBin, buf.length); i++) {
+    const mag = buf[i];
+    if (mag < threshold) continue;
+    const freq = i * binHz;
+    if (freq < 20) continue;
+    // Convert freq to MIDI note
     const midi = 12 * Math.log2(freq / 440) + 69;
     const pc = ((Math.round(midi) % 12) + 12) % 12;
-    // Weight: linear amplitude, not squared — favors fundamentals over noise
-    const amp = Math.pow(10, mag / 20);
-    pcEnergy[pc] += amp;
-    // Bass: lowest unsuppressed peak below 330Hz
-    if (freq < 330 && mag > bassMaxMag) { bassMaxMag = mag; bassPC = pc; }
+    const energy = Math.pow(10, mag / 20);
+    pcEnergy[pc] += energy;
+    // Track bass (lowest strong frequency)
+    const freqBin = i * binHz;
+    if (freqBin < 350 && mag > bassMaxE) { bassMaxE = mag; bassPC = pc; }
   }
 
   return { pcEnergy, bassPC };
 }
-
-let chordHistory = [], chordHistorySize = 4;
 
 function chordUpdate() {
   if (!chordAnalyser) return;
@@ -1697,16 +1511,10 @@ function chordUpdate() {
     bars[i].className = "chord-bar";
   });
 
-  // Match chord with stability buffer
+  // Match chord
   const match = matchChord(activePCs);
-  const matchKey = match ? (match.root + "_" + match.name) : "";
-  chordHistory.push(matchKey);
-  if (chordHistory.length > chordHistorySize) chordHistory.shift();
-  // Only display if last N frames agree
-  const stableMatch = chordHistory.length === chordHistorySize &&
-    chordHistory.every(k => k === matchKey) && match;
 
-  if (stableMatch) {
+  if (match) {
     const rootName = CHORD_NOTE_NAMES[match.root];
     chordMain.textContent = rootName + match.name;
 
@@ -1741,17 +1549,17 @@ function chordUpdate() {
       if (enhSlash) aliasParts.push(enhSlash + match.name + "/" + CHORD_NOTE_NAMES[bassPC]);
     }
     chordAliases.textContent = aliasParts.length ? "≡ " + aliasParts.join("  ") : "";
-  } else if (activePCs.size > 0 && !stableMatch) {
-    // Don't flash "?" — keep last valid chord or show "..." while stabilizing
-    if (!match) {
-      chordMain.textContent = "···";
-      chordSub.textContent = ""; chordNotesEl.innerHTML = ""; chordAliases.textContent = "";
-    }
-    [...activePCs].forEach(pc => bars[pc].classList.add("active"));
-  } else if (activePCs.size === 0) {
+  } else if (activePCs.size > 0) {
+    chordMain.textContent = "?";
+    chordSub.textContent = "accordo non riconosciuto";
+    chordNotesEl.innerHTML = "";
+    [...activePCs].forEach(pc => {
+      bars[pc].classList.add("active");
+    });
+    chordAliases.textContent = "";
+  } else {
     chordMain.textContent = "—";
     chordSub.textContent = ""; chordNotesEl.innerHTML = ""; chordAliases.textContent = "";
-    chordHistory = [];
   }
 }
 
@@ -1775,7 +1583,7 @@ chordStartBtn.onclick = async () => {
     chordCtx = new (window.AudioContext || window.webkitAudioContext)();
     chordAnalyser = chordCtx.createAnalyser();
     chordAnalyser.fftSize = 8192;       // alta risoluzione freq per accordi
-    chordAnalyser.smoothingTimeConstant = 0.82;
+    chordAnalyser.smoothingTimeConstant = 0.75;
     chordCtx.createMediaStreamSource(chordMicStream).connect(chordAnalyser);
     chordRunning = true;
     chordDot.className = "dot on"; chordBtnLabel.textContent = "Ferma microfono";
