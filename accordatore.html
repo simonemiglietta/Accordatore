@@ -34,7 +34,8 @@
     background: var(--bg);
     color: var(--text);
     min-height: 100vh;
-    padding: 1rem 0.875rem 2rem;
+    min-height: 100dvh;
+    padding: 0.75rem 0.875rem 1rem;
     position: relative;
     overflow-x: hidden;
   }
@@ -114,8 +115,8 @@
     color: var(--text);
     text-shadow: 0 0 6px var(--green);
   }
-  .tab-panel { display: none; }
-  .tab-panel.active { display: block; }
+  .tab-panel { display: none; height: 0; overflow: hidden; }
+  .tab-panel.active { display: block; height: auto; overflow: visible; }
 
   /* ── Tuning pills ── */
   .tunings-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 1rem; }
@@ -308,8 +309,8 @@
     background: var(--surface);
     border: 1px solid var(--border-bright);
     border-radius: var(--radius);
-    padding: 1rem;
-    margin-bottom: 1rem;
+    padding: 0.625rem;
+    margin-bottom: 0.75rem;
     position: relative;
     box-shadow: 0 0 15px var(--green-glow);
   }
@@ -319,18 +320,18 @@
     font-size: 9px; letter-spacing: 2px;
     background: var(--bg); padding: 0 6px; color: var(--text-dim);
   }
-  .looper-status { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 10px; min-height: 18px; }
+  .looper-status { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); text-align: center; margin-bottom: 6px; min-height: 16px; }
   .looper-status.recording { color: var(--red); text-shadow: 0 0 6px var(--red); animation: blink 0.6s linear infinite; }
   .looper-status.playing { color: var(--text); text-shadow: 0 0 6px var(--green); }
   .looper-status.processing { color: var(--text-muted); }
   .looper-status.stretching { color: var(--amber); }
-  canvas.looper-waveform { width: 100%; height: 55px; border-radius: 2px; background: #050a03; border: 1px solid var(--border); margin-bottom: 10px; display: block; }
-  .loop-progress-wrap { height: 2px; background: var(--surface2); margin-bottom: 12px; overflow: hidden; }
+  canvas.looper-waveform { width: 100%; height: 44px; border-radius: 2px; background: #050a03; border: 1px solid var(--border); margin-bottom: 10px; display: block; }
+  .loop-progress-wrap { height: 2px; background: var(--surface2); margin-bottom: 8px; overflow: hidden; }
   .loop-progress-bar { height: 100%; width: 0%; background: var(--green); box-shadow: 0 0 4px var(--green); transition: width 0.05s linear; }
 
-  .looper-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+  .looper-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; margin-bottom: 10px; }
   .lbtn {
-    padding: 12px 8px 10px;
+    padding: 9px 8px 8px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: var(--surface2);
@@ -351,7 +352,7 @@
   .lbtn.play-active .llabel { color: var(--text-dim); }
   .lbtn:disabled { opacity: 0.2; pointer-events: none; }
 
-  .loop-ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .loop-ctrl-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
   .loop-ctrl-row input[type=range] { flex: 1; accent-color: var(--green); }
   .loop-ctrl-label { font-size: 9px; color: var(--text-muted); white-space: nowrap; min-width: 90px; letter-spacing: 1px; text-transform: uppercase; }
   .loop-ctrl-val { font-size: 11px; color: var(--text); min-width: 40px; text-align: right; }
@@ -361,8 +362,8 @@
     background: var(--surface2);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 0.75rem;
-    margin-top: 8px;
+    padding: 0.5rem;
+    margin-top: 10px;
     position: relative;
   }
   .metro-card::before {
@@ -397,11 +398,11 @@
     display: flex; align-items: center; justify-content: center;
   }
   .metro-step-btn:active { color: var(--text); border-color: var(--green); transform: scale(0.9); }
-  .metro-bpm-row { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+  .metro-bpm-row { display: flex; align-items: center; gap: 5px; margin-bottom: 9px; }
   .metro-bpm-row input[type=range] { flex: 1; accent-color: var(--green); min-width: 0; }
   .metro-bpm-val { font-size: 24px; min-width: 44px; text-align: right; text-shadow: 0 0 10px var(--green); letter-spacing: -1px; }
   .metro-bpm-unit { font-size: 9px; color: var(--text-muted); letter-spacing: 2px; text-transform: uppercase; }
-  .metro-sig-row { display: flex; gap: 6px; margin-bottom: 12px; }
+  .metro-sig-row { display: flex; gap: 5px; margin-bottom: 9px; }
   .metro-sig-btn {
     flex: 1; padding: 6px 4px;
     border-radius: var(--radius);
@@ -428,15 +429,15 @@
     box-shadow: 0 0 8px var(--green), 0 0 16px var(--green-glow) !important;
     transform: scale(1.3);
   }
-  .metro-muted-note { font-size: 9px; color: var(--red); text-align: center; margin-top: 8px; min-height: 16px; letter-spacing: 1px; text-transform: uppercase; }
+  .metro-muted-note { font-size: 9px; color: var(--red); text-align: center; margin-top: 5px; min-height: 10px; letter-spacing: 1px; text-transform: uppercase; }
 
   /* ── Trainer ── */
   .trainer-card {
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: var(--radius);
-    padding: 1rem;
-    margin-top: 8px;
+    padding: 0.5rem;
+    margin-top: 10px;
     position: relative;
   }
   .trainer-card::before {
@@ -457,12 +458,12 @@
     display: flex; align-items: center; justify-content: center;
   }
   .trainer-toggle.on { border-color: var(--red); color: var(--red); background: rgba(255,59,59,0.1); text-shadow: 0 0 6px var(--red); }
-  .trainer-row { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
+  .trainer-row { display: flex; align-items: center; gap: 5px; margin-bottom: 9px; }
   .trainer-row:last-child { margin-bottom: 0; }
   .trainer-row input[type=range] { flex: 1; accent-color: var(--green); }
   .trainer-lbl { font-size: 9px; color: var(--text-muted); white-space: nowrap; min-width: 68px; letter-spacing: 1px; text-transform: uppercase; }
   .trainer-val { font-size: 12px; color: var(--text); min-width: 36px; text-align: right; white-space: nowrap; }
-  .trainer-step-row { display: flex; align-items: center; gap: 0; margin-bottom: 10px; }
+  .trainer-step-row { display: flex; align-items: center; gap: 0; margin-bottom: 9px; }
   .trainer-step-lbl { font-size: 9px; color: var(--text-muted); min-width: 68px; letter-spacing: 1px; text-transform: uppercase; }
   .step-btn {
     width: 34px; height: 34px;
@@ -477,7 +478,7 @@
   }
   .step-btn:active { transform: scale(0.9); color: var(--text); border-color: var(--green); }
   .step-val-box { font-size: 18px; min-width: 48px; text-align: center; color: var(--text); text-shadow: 0 0 6px var(--green); }
-  .trainer-status { font-size: 9px; color: var(--text-dim); text-align: center; min-height: 18px; margin-top: 5px; letter-spacing: 1px; text-transform: uppercase; }
+  .trainer-status { font-size: 9px; color: var(--text-dim); text-align: center; min-height: 12px; margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
 
   /* ── Chord Finder ── */
   .chord-card {
@@ -487,7 +488,6 @@
     padding: 1.5rem 1rem 1.25rem;
     margin-bottom: 1rem;
     text-align: center;
-    min-height: 140px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     position: relative;
     box-shadow: 0 0 20px var(--green-glow);
@@ -620,6 +620,7 @@
 <!-- ══ TAB LOOPER ══ -->
 <div class="tab-panel" id="tab-looper">
   <div class="looper-card">
+    <div class="looper-status" id="looper-status">Press REC to start</div>
     <canvas class="looper-waveform" id="looper-waveform"></canvas>
     <div class="loop-progress-wrap"><div class="loop-progress-bar" id="loop-progress"></div></div>
 
@@ -639,6 +640,7 @@
     </div>
 
     <div class="loop-ctrl-row">
+      <span class="loop-ctrl-label">Loop volume</span>
       <input type="range" id="loop-vol" min="0" max="400" step="1" value="150" oninput="setLoopVol(this.value)">
       <span class="loop-ctrl-val" id="loop-vol-val">150%</span>
     </div>
