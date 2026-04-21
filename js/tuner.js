@@ -123,14 +123,15 @@ let gaugeAnimRaf = null;
 
 function resizeGauge() {
   const w = gaugeCanvas.offsetWidth;
+  const h = gaugeCanvas.offsetHeight;
   gaugeCanvas.width  = w * window.devicePixelRatio;
-  gaugeCanvas.height = 80 * window.devicePixelRatio;
+  gaugeCanvas.height = h * window.devicePixelRatio;
   gaugeCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
   drawGauge();
 }
 
 function drawGauge() {
-  const w = gaugeCanvas.offsetWidth, h = 100;
+  const w = gaugeCanvas.offsetWidth, h = gaugeCanvas.offsetHeight;
   gaugeCtx.fillStyle = '#0a0f06';
   gaugeCtx.fillRect(0, 0, w, h);
   const cx = w / 2, cy = h - 10, r = Math.min(w * 0.42, 78);
@@ -293,8 +294,8 @@ startBtn.addEventListener('click', async () => {
     startBtn.className = "start-btn";
     centsLabel.textContent = "select a string and start";
     centsLabel.className = "cents-label";
-    detectedNote.textContent = "—";
-    detectedFreq.textContent = "0.0 Hz";
+    detectedNote.textContent = "";
+    detectedFreq.textContent = "";
     setNeedle(0);
     resetHistory();
     return;

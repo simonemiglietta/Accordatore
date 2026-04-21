@@ -196,9 +196,8 @@
     padding: 0 6px;
     color: var(--text-dim);
   }
-  .note-display { margin-bottom: 6px; }
   .detected-note {
-    font-size: 60px;
+    font-size: 64px;
     font-family: var(--font);
     font-weight: normal;
     line-height: 1;
@@ -206,7 +205,10 @@
     color: var(--text);
     text-shadow: 0 0 20px var(--green), 0 0 40px rgba(57,255,20,0.3);
     transition: color 0.2s, text-shadow 0.2s;
-    display: inline-block;
+    display: block;
+    text-align: center;
+    min-height: 66px;
+    margin-bottom: 2px;
   }
   .detected-note.in-tune {
     color: var(--text);
@@ -220,11 +222,13 @@
   .detected-freq {
     font-size: 10px;
     color: var(--text-dim);
-    margin-top: 1px;
     letter-spacing: 2px;
     text-transform: uppercase;
+    text-align: center;
+    min-height: 16px;
+    margin-bottom: 4px;
   }
-  .gauge-canvas { width: 100%; height: 80px; display: block; margin-bottom: 2px; }
+  .gauge-canvas { width: 100%; height: 110px; display: block; margin-bottom: 4px; }
   .cents-label {
     font-size: 11px;
     font-family: var(--font);
@@ -640,11 +644,9 @@
   <div class="tunings-row" id="tunings-row"></div>
   <div class="strings-grid" id="strings-grid"></div>
   <div class="meter-card">
-    <div class="note-display">
-      <div class="detected-note" id="detected-note">—</div>
-      <div class="detected-freq" id="detected-freq">0.0 Hz</div>
-    </div>
+    <div class="detected-note" id="detected-note"> </div>
     <canvas id="gauge-canvas" class="gauge-canvas"></canvas>
+    <div class="detected-freq" id="detected-freq"></div>
     <div class="cents-label" id="cents-label">select a string and start</div>
     <div class="history-wrap">
       <div class="history-label">Stability last 2s</div>
