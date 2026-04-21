@@ -81,7 +81,7 @@
     transition: opacity 0.6s ease;
     overflow: hidden;
     max-height: 40px;
-    margin-bottom: 1.1rem;
+    margin-bottom: 1.5rem;
   }
   h1.hidden {
     opacity: 0;
@@ -95,7 +95,7 @@
   /* ── Tabs ── */
   .tab-nav {
     display: flex;
-    margin-bottom: 1.1rem;
+    margin-bottom: 1.5rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
@@ -127,7 +127,7 @@
   .tab-panel.active { display: block; height: auto; overflow: visible; }
 
   /* ── Tuning pills ── */
-  .tunings-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 15px; }
+  .tunings-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 24px; }
   .tuning-btn {
     font-size: 10px;
     font-family: var(--font);
@@ -150,7 +150,7 @@
   }
 
   /* ── String buttons ── */
-  .strings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 15px; }
+  .strings-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 24px; }
   .string-btn {
     padding: 12px 4px 10px;
     border-radius: var(--radius);
@@ -181,7 +181,7 @@
     border: 1px solid var(--border-bright);
     border-radius: var(--radius);
     padding: 0.75rem 1rem 0.75rem;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
     text-align: center;
     position: relative;
     box-shadow: 0 0 20px var(--green-glow), inset 0 0 20px rgba(0,0,0,0.4);
@@ -250,7 +250,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.75rem 1rem;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
     position: relative;
   }
   .controls-card::before {
@@ -279,7 +279,7 @@
     letter-spacing: 2px;
     text-transform: uppercase;
     cursor: pointer;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -318,7 +318,7 @@
     border: 1px solid var(--border-bright);
     border-radius: var(--radius);
     padding: 0.625rem;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
     position: relative;
     box-shadow: 0 0 15px var(--green-glow);
   }
@@ -371,7 +371,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.5rem 0.625rem;
-    margin-top: 15px;
+    margin-top: 28px;
     position: relative;
   }
   .metro-card::before {
@@ -445,7 +445,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.5rem 0.625rem;
-    margin-top: 15px;
+    margin-top: 28px;
     position: relative;
   }
   .trainer-card::before {
@@ -494,7 +494,7 @@
     border: 1px solid var(--border-bright);
     border-radius: var(--radius);
     padding: 1.5rem 1rem 1.25rem;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
     text-align: center;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     position: relative;
@@ -528,7 +528,7 @@
     border: 1px solid var(--border);
     border-radius: var(--radius);
     padding: 0.75rem;
-    margin-bottom: 15px;
+    margin-bottom: 24px;
   }
   canvas.chord-spectrum { width: 100%; height: 50px; display: block; border-radius: 2px; margin-bottom: 8px; background: #050a03; border: 1px solid var(--border); }
   .chord-bars { display: flex; gap: 3px; height: 36px; align-items: flex-end; }
@@ -581,10 +581,59 @@
     cursor: pointer; transition: all 0.15s;
   }
   .apply-btn:active { border-color: var(--green); color: var(--text); background: var(--green-glow); }
+
+  /* ── Install Banner ── */
+  #install-banner {
+    position: fixed;
+    bottom: calc(1rem + env(safe-area-inset-bottom));
+    left: 0.75rem; right: 0.75rem;
+    background: var(--surface2);
+    border: 1px solid var(--border-bright);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    z-index: 9997;
+    box-shadow: 0 0 20px var(--green-glow);
+    font-family: var(--font);
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--text-dim);
+  }
+  #install-text { flex: 1; }
+  #install-btn {
+    padding: 6px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--green);
+    background: var(--green-glow);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    text-shadow: 0 0 6px var(--green);
+    white-space: nowrap;
+  }
+  #install-dismiss {
+    padding: 4px 8px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-family: var(--font);
+    font-size: 13px;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 <audio id="ios-speaker-unlock" playsinline style="display:none"></audio>
+<div id="install-banner" style="display:none">
+  <span id="install-text">📲 Add to home screen</span>
+  <button id="install-btn">Install</button>
+  <button id="install-dismiss">✕</button>
+</div>
 <h1 id="splash-title">🎸 Guitar Tuner</h1>
 
 <div class="tab-nav">
@@ -2000,6 +2049,36 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   });
 }
+
+
+// ── PWA Install Banner ──────────────────────────
+let deferredInstallPrompt = null;
+const installBanner = document.getElementById("install-banner");
+const installBtn    = document.getElementById("install-btn");
+const installDismiss= document.getElementById("install-dismiss");
+
+window.addEventListener("beforeinstallprompt", e => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  installBanner.style.display = "flex";
+});
+
+installBtn.onclick = async () => {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  const { outcome } = await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBanner.style.display = "none";
+};
+
+installDismiss.onclick = () => {
+  installBanner.style.display = "none";
+};
+
+window.addEventListener("appinstalled", () => {
+  installBanner.style.display = "none";
+  deferredInstallPrompt = null;
+});
 
 </script>
 </body>
