@@ -580,6 +580,44 @@
   }
   .apply-btn:active { border-color: var(--green); color: var(--text); background: var(--green-glow); }
 
+  /* ── Range inputs ── */
+  input[type=range] {
+    -webkit-appearance: none;
+    appearance: none;
+    background: transparent;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    margin-top: -8px;
+    border: none;
+  }
+  input[type=range]::-moz-range-track {
+    height: 4px;
+    border-radius: 2px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+  input[type=range]::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    border: none;
+  }
+
   /* ── Install Banner ── */
   #install-banner {
     position: fixed;
