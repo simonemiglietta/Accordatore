@@ -445,21 +445,23 @@
     font-size: 9px; letter-spacing: 2px;
     background: var(--bg); padding: 0 6px; color: var(--text-muted);
   }
-  .trainer-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; margin-top: 4px; }
+  .trainer-header { display: none; }
   .trainer-title { display: none; }
   .trainer-toggle {
-    padding: 5px 14px; border-radius: var(--radius);
+    width: 32px; height: 32px; flex-shrink: 0;
+    border-radius: var(--radius);
     border: 1px solid var(--border); background: transparent;
     color: var(--text-dim); font-family: var(--font);
-    font-size: 10px; letter-spacing: 2px; text-transform: uppercase;
+    font-size: 13px;
     cursor: pointer; transition: all 0.15s; -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
   }
   .trainer-toggle.on { border-color: var(--red); color: var(--red); background: rgba(255,59,59,0.1); text-shadow: 0 0 6px var(--red); }
-  .trainer-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .trainer-row { display: flex; align-items: center; gap: 5px; margin-bottom: 10px; }
   .trainer-row:last-child { margin-bottom: 0; }
   .trainer-row input[type=range] { flex: 1; accent-color: var(--green); }
   .trainer-lbl { font-size: 9px; color: var(--text-muted); white-space: nowrap; min-width: 68px; letter-spacing: 1px; text-transform: uppercase; }
-  .trainer-val { font-size: 12px; color: var(--text); min-width: 40px; text-align: right; }
+  .trainer-val { font-size: 12px; color: var(--text); min-width: 36px; text-align: right; white-space: nowrap; }
   .trainer-step-row { display: flex; align-items: center; gap: 0; margin-bottom: 10px; }
   .trainer-step-lbl { font-size: 9px; color: var(--text-muted); min-width: 68px; letter-spacing: 1px; text-transform: uppercase; }
   .step-btn {
@@ -672,12 +674,13 @@
     <div class="trainer-card">
       <div class="trainer-header">
         <span class="trainer-title">Auto acceleration</span>
-        <button class="trainer-toggle" id="trainer-toggle" onclick="trainerToggle()">Start</button>
       </div>
       <div class="trainer-row">
-        <span class="trainer-lbl">Period</span>
+        <button class="trainer-toggle" id="trainer-toggle" onclick="trainerToggle()">▶</button>
+        <button class="metro-step-btn" onclick="trainerPeriodAdj(-1)">−</button>
         <input type="range" id="trainer-period" min="1" max="32" step="1" value="4" oninput="trainerPeriodChange(this.value)">
-        <span class="trainer-val" id="trainer-period-val">4 beats</span>
+        <button class="metro-step-btn" onclick="trainerPeriodAdj(+1)">+</button>
+        <span class="trainer-val" id="trainer-period-val">4 bt</span>
       </div>
       <div class="trainer-step-row">
         <span class="trainer-step-lbl">BPM step</span>
@@ -1500,7 +1503,12 @@ const trainerTargetSlider = document.getElementById("trainer-target");
 
 function trainerPeriodChange(v) {
   trainerPeriod = parseInt(v);
-  document.getElementById("trainer-period-val").textContent = v + " beats";
+  document.getElementById("trainer-period-val").textContent = v + " bt";
+}
+function trainerPeriodAdj(delta) {
+  trainerPeriod = Math.max(1, Math.min(32, trainerPeriod + delta));
+  document.getElementById("trainer-period").value = trainerPeriod;
+  document.getElementById("trainer-period-val").textContent = trainerPeriod + " bt";
 }
 
 function trainerTargetChange(v) {
@@ -1516,7 +1524,7 @@ function trainerStepAdj(delta) {
 function trainerToggle() {
   if (trainerRunning) {
     trainerRunning = false;
-    trainerToggleBtn.textContent = "Start";
+    trainerToggleBtn.textContent = "▶";
     trainerToggleBtn.className = "trainer-toggle";
     trainerStatusEl.textContent = "";
     trainerBeatCount = 0;
@@ -1526,7 +1534,7 @@ function trainerToggle() {
     trainerRunning = true;
     trainerStartBpm = metroBpm;
     trainerBeatCount = 0;
-    trainerToggleBtn.textContent = "Stop";
+    trainerToggleBtn.textContent = "⏹";
     trainerToggleBtn.className = "trainer-toggle on";
     trainerUpdateStatus();
   }
@@ -1535,7 +1543,7 @@ function trainerToggle() {
 function trainerUpdateStatus() {
   if (!trainerRunning) return;
   const remaining = trainerPeriod - (trainerBeatCount % trainerPeriod);
-  trainerStatusEl.textContent = metroBpm + " BPM → target " + trainerTarget + " | next step in " + remaining + " beats";
+  trainerStatusEl.textContent = metroBpm + " BPM → target " + trainerTarget + " | next step in " + remaining + " bt";
 }
 
 // Agganciato al tick del metronomo — chiamato da scheduleTick su beat 0 di ogni misura
