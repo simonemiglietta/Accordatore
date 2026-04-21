@@ -1,5 +1,6 @@
 import { state } from './tuner.js';
 import { noteToFreq } from './shared.js';
+import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
 
 let pipeAudioCtx = null, pipeOsc = null, pipeGain = null;
 let pipeRunning = false, pipeIntervalId = null;
@@ -15,6 +16,7 @@ function pipeStart() {
   if (pipeAudioCtx.state === "suspended") pipeAudioCtx.resume();
 
   pipeRunning = true;
+  acquireWakeLock();
   pipeDot.className = "dot on";
   pipeLabel.textContent = "Stop reference note";
   pipeBtn.className = "start-btn active";
@@ -54,6 +56,7 @@ function playPipeNote(freq) {
 
 function pipeStop() {
   pipeRunning = false;
+  releaseWakeLock();
   clearInterval(pipeIntervalId);
   if (pipeOsc) { try { pipeOsc.stop(); } catch(e){} pipeOsc = null; }
   pipeDot.className = "dot";

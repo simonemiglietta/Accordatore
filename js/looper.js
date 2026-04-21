@@ -1,4 +1,5 @@
 import { metroMuteForRec } from './metronome.js';
+import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
 
 let loopAudioCtx = null, loopStream = null;
 let mediaRecorder = null, recordedChunks = [];
@@ -216,6 +217,7 @@ function looperPlay() {
   loopSource.loop = true;
   loopSource.connect(loopGain);
   loopSource.start();
+  acquireWakeLock();
   loopStartTime = loopAudioCtx.currentTime;
   loopDuration = loopStretchedBuffer.duration;
   loopState = "playing";
@@ -228,8 +230,10 @@ function looperPlay() {
 }
 
 function looperStop() {
+  const wasPlaying = loopState === "playing";
   if (loopSource) { try { loopSource.stop(); } catch(e) {} loopSource = null; }
   if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+  if (wasPlaying) releaseWakeLock();
   if (loopAnimRaf) { cancelAnimationFrame(loopAnimRaf); loopAnimRaf = null; }
   loopState = "idle"; loopProgress.style.width = "0%";
   looperStatus.textContent = loopBuffer ? `Sample ready — ${loopBuffer.duration.toFixed(2)}s` : "Press REC to start";

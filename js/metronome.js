@@ -1,3 +1,5 @@
+import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
+
 let metroBpm = 120, metroBeats = 4;
 let metroRunning = false, metroMuted = false;
 let metroNextTime = 0, metroCurBeat = 0, metroSchedulerId = null;
@@ -88,9 +90,11 @@ export function metroToggle() {
     metroBeatsEl.querySelectorAll(".metro-beat").forEach(d => d.classList.remove("lit"));
     metroToggleBtn.textContent = "▶";
     metroToggleBtn.className = "metro-toggle";
+    releaseWakeLock();
   } else {
     ensureMetroCtx();
     metroRunning = true;
+    acquireWakeLock();
     metroCurBeat = 0;
     metroNextTime = metroAudioCtx.currentTime + 0.05;
     metroToggleBtn.textContent = "⏹";
