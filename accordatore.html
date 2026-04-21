@@ -73,12 +73,20 @@
     text-transform: uppercase;
     color: var(--text);
     text-shadow: 0 0 8px var(--green);
+    transition: opacity 0.8s ease, max-height 0.8s ease, margin 0.8s ease;
+    overflow: hidden;
+  }
+  h1.hidden {
+    opacity: 0;
+    max-height: 0;
+    margin-bottom: 0;
+    pointer-events: none;
   }
 
   /* ── Tabs ── */
   .tab-nav {
     display: flex;
-    margin-bottom: 1.25rem;
+    margin-bottom: 0.75rem;
     border: 1px solid var(--border);
     border-radius: var(--radius);
     overflow: hidden;
@@ -163,8 +171,8 @@
     background: var(--surface);
     border: 1px solid var(--border-bright);
     border-radius: var(--radius);
-    padding: 1.25rem 1rem 1rem;
-    margin-bottom: 1rem;
+    padding: 0.75rem 1rem 0.75rem;
+    margin-bottom: 0.75rem;
     text-align: center;
     position: relative;
     box-shadow: 0 0 20px var(--green-glow), inset 0 0 20px rgba(0,0,0,0.4);
@@ -179,13 +187,13 @@
     padding: 0 6px;
     color: var(--text-dim);
   }
-  .note-display { margin-bottom: 10px; }
+  .note-display { margin-bottom: 6px; }
   .detected-note {
-    font-size: 80px;
+    font-size: 60px;
     font-family: var(--font);
     font-weight: normal;
     line-height: 1;
-    letter-spacing: -4px;
+    letter-spacing: -3px;
     color: var(--text);
     text-shadow: 0 0 20px var(--green), 0 0 40px rgba(57,255,20,0.3);
     transition: color 0.2s, text-shadow 0.2s;
@@ -203,11 +211,11 @@
   .detected-freq {
     font-size: 10px;
     color: var(--text-dim);
-    margin-top: 2px;
+    margin-top: 1px;
     letter-spacing: 2px;
     text-transform: uppercase;
   }
-  .gauge-canvas { width: 100%; height: 100px; display: block; margin-bottom: 4px; }
+  .gauge-canvas { width: 100%; height: 80px; display: block; margin-bottom: 2px; }
   .cents-label {
     font-size: 11px;
     font-family: var(--font);
@@ -222,7 +230,7 @@
   .cents-label.sharp { color: var(--red); text-shadow: 0 0 6px var(--red); }
   .cents-label.flat  { color: var(--amber); text-shadow: 0 0 6px var(--amber); }
 
-  .history-wrap { margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+  .history-wrap { margin-top: 8px; padding-top: 7px; border-top: 1px solid var(--border); }
   .history-label { font-size: 9px; color: var(--text-muted); margin-bottom: 5px; text-align: left; letter-spacing: 2px; text-transform: uppercase; }
   .history-bar { display: flex; gap: 2px; height: 20px; align-items: flex-end; }
   .history-bar .hbar { flex: 1; border-radius: 1px; min-height: 2px; transition: height 0.1s, background 0.15s; }
@@ -554,7 +562,7 @@
 </head>
 <body>
 <audio id="ios-speaker-unlock" playsinline style="display:none"></audio>
-<h1>🎸 Guitar Tuner</h1>
+<h1 id="splash-title">🎸 Guitar Tuner</h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" onclick="switchTab('tuner',this)">Tuner</button>
@@ -796,7 +804,14 @@ function buildTuningBtns() {
     const b = document.createElement("button");
     b.className = "tuning-btn" + (name === currentTuning ? " active" : "");
     b.textContent = name;
-    b.onclick = () => { currentTuning = name; selectedString = 0; buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory(); };
+    b.onclick = () => { currentTuning = name; selectedString = 0; 
+// Splash title fade
+setTimeout(() => {
+  const t = document.getElementById("splash-title");
+  if (t) t.classList.add("hidden");
+}, 2000);
+
+buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory(); };
     tuningsRow.appendChild(b);
   });
 }
@@ -828,7 +843,14 @@ document.getElementById("apply-btn").onclick = () => {
   if (newNotes.some(n => noteToFreq(n) === null)) { alert("Invalid note! Use format like E2, G#3…"); return; }
   tunings["Custom"] = newNotes;
   currentTuning = "Custom"; selectedString = 0;
-  buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory();
+  
+// Splash title fade
+setTimeout(() => {
+  const t = document.getElementById("splash-title");
+  if (t) t.classList.add("hidden");
+}, 2000);
+
+buildTuningBtns(); buildStringBtns(); buildCustomInputs(); resetHistory();
 };
 
 // ── Canvas gauge ───────────────────────────────
@@ -842,7 +864,7 @@ let gaugeAnimRaf = null;
 function resizeGauge() {
   const w = gaugeCanvas.offsetWidth;
   gaugeCanvas.width = w * window.devicePixelRatio;
-  gaugeCanvas.height = 100 * window.devicePixelRatio;
+  gaugeCanvas.height = 80 * window.devicePixelRatio;
   gaugeCtx.scale(window.devicePixelRatio, window.devicePixelRatio);
   drawGauge();
 }
@@ -1015,6 +1037,13 @@ startBtn.onclick = async () => {
     requestAnimationFrame(tunerUpdate);
   } catch(e) { alert("Cannot access microphone:\n" + e.message); }
 };
+
+
+// Splash title fade
+setTimeout(() => {
+  const t = document.getElementById("splash-title");
+  if (t) t.classList.add("hidden");
+}, 2000);
 
 buildTuningBtns(); buildStringBtns(); buildCustomInputs();
 
