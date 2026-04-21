@@ -222,7 +222,7 @@ function looperPlay() {
   looperStatus.textContent = `▶ Loop — ${Math.round(loopSpeed*100)}%`;
   looperStatus.className = "looper-status playing";
   lbtnPlay.classList.add("play-active");
-  lbtnPlay.querySelector(".licon").textContent = "⏸";
+  lbtnPlay.querySelector(".licon").textContent = "▮▮";
   lbtnStop.disabled = false;
   animateProgress();
 }
