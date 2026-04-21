@@ -4,6 +4,18 @@ import './metronome.js';
 import './chord.js';
 import './pipe.js';
 
+// Slider fill: keeps the selected portion green on webkit
+function updateSliderFill(input) {
+  const pct = ((input.value - input.min) / (input.max - input.min)) * 100;
+  input.style.setProperty('--fill', pct + '%');
+}
+function initSliders() {
+  document.querySelectorAll('input[type=range]').forEach(input => {
+    updateSliderFill(input);
+    input.addEventListener('input', () => updateSliderFill(input));
+  });
+}
+
 // Tab navigation
 document.querySelectorAll('.tab-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -13,6 +25,8 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.add('active');
   });
 });
+
+initSliders();
 
 // Init tuner UI
 buildTuningBtns();
