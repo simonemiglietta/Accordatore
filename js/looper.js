@@ -5,6 +5,7 @@ let loopAudioCtx = null, loopStream = null;
 let mediaRecorder = null, recordedChunks = [];
 let loopBuffer = null;
 let loopStretchedBuffer = null;
+let loopPCM = null; // raw Float32Array data, survives AudioContext close
 let loopSource = null, loopGain = null, loopCompressor = null;
 let loopState = "idle";
 let loopStartTime = 0, loopDuration = 0;
@@ -212,19 +213,28 @@ async function looperRec() {
     // On iOS, having getUserMedia active forces the audio session into "voice call" mode
     // (low-volume earpiece routing). Releasing the mic lets iOS switch to the "media
     // playback" session — the same loud path used by native apps like Telegram.
+    // Copy PCM to plain Float32Arrays BEFORE closing the context —
+    // on iOS/Safari the AudioBuffer data is invalidated when the context closes.
+    loopPCM = {
+      ch: processed.numberOfChannels,
+      sr: processed.sampleRate,
+      len: processed.length,
+      dur: processed.duration,
+      data: Array.from({length: processed.numberOfChannels}, (_, c) =>
+        new Float32Array(processed.getChannelData(c)))
+    };
+    drawWaveform(processed); // draw before context closes
+
     loopStream.getTracks().forEach(t => t.stop());
     loopStream = null;
-    // Close the mic-associated context. AudioBuffer data survives context close.
-    // A new context is created in looperPlay() under a real user gesture —
-    // iOS refuses to resume a context created here (no user gesture).
+    // Close the mic-associated context so iOS releases the "voice call" audio
+    // session. The new context is created in looperPlay() under a user gesture,
+    // which assigns the "media playback" session (full speaker volume).
     await loopAudioCtx.close().catch(() => {});
     loopAudioCtx = null;
-
-    // wsola needs an AudioContext, so defer stretching to looperPlay().
-    loopBuffer = processed;
-    loopStretchedBuffer = processed;
-    loopDuration = loopStretchedBuffer.duration;
-    drawWaveform(loopBuffer);
+    loopBuffer = null;
+    loopStretchedBuffer = null;
+    loopDuration = loopPCM.dur;
     looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
     looperStatus.className = "looper-status";
     lbtnPlay.disabled = false; lbtnClear.disabled = false;
@@ -239,16 +249,18 @@ async function looperRec() {
 }
 
 async function looperPlay() {
-  if (!loopBuffer || loopState === "recording") return;
+  if (!loopPCM || loopState === "recording") return;
   if (loopState === "playing") { looperStop(); return; }
 
-  // After recording, the old context was closed to release iOS's voice-call audio
-  // session. We create a fresh one here, under a real user gesture, so iOS assigns
-  // the media-playback session (full speaker volume).
   if (!loopAudioCtx) {
+    // First play after recording: create context under user gesture so iOS assigns
+    // the "media playback" audio session (full speaker volume).
     loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
     await unlockSpeaker();
-    loopBuffer = rebufferInCtx(loopBuffer, loopAudioCtx);
+    // Reconstruct AudioBuffer from the raw PCM saved before context close
+    const buf = loopAudioCtx.createBuffer(loopPCM.ch, loopPCM.len, loopPCM.sr);
+    for (let c = 0; c < loopPCM.ch; c++) buf.copyToChannel(loopPCM.data[c], c);
+    loopBuffer = buf;
     loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
     loopDuration = loopStretchedBuffer.duration;
   } else {
@@ -293,18 +305,18 @@ function looperStop() {
   if (wasPlaying) releaseWakeLock();
   if (loopAnimRaf) { cancelAnimationFrame(loopAnimRaf); loopAnimRaf = null; }
   loopState = "idle"; loopProgress.style.width = "0%";
-  looperStatus.textContent = loopBuffer ? `Sample ready — ${loopBuffer.duration.toFixed(2)}s` : "Press REC to start";
+  looperStatus.textContent = loopPCM ? `Sample ready — ${loopPCM.dur.toFixed(2)}s` : "Press REC to start";
   looperStatus.className = "looper-status";
   lbtnPlay.classList.remove("play-active");
   lbtnPlay.querySelector(".licon").textContent = "▶";
   lbtnRec.classList.remove("rec-active");
   lbtnStop.disabled = true;
-  if (loopBuffer) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
+  if (loopPCM) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
 }
 
 function looperClear() {
   looperStop();
-  loopBuffer = null; loopStretchedBuffer = null; loopDuration = 0;
+  loopBuffer = null; loopStretchedBuffer = null; loopPCM = null; loopDuration = 0;
   loopSpeedSlider.value = 100; loopSpeedVal.textContent = "100%"; loopSpeed = 1.0;
   loopSpeedSlider.disabled = true;
   drawWaveform(null);
