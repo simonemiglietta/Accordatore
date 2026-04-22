@@ -203,12 +203,13 @@ function looperPlay() {
 
   loopGain = loopAudioCtx.createGain();
   loopGain.gain.value = parseInt(loopVolSlider.value) / 100;
+  // Limiter only — prevents hard clipping without compressing the signal body
   loopCompressor = loopAudioCtx.createDynamicsCompressor();
-  loopCompressor.threshold.value = -24;
-  loopCompressor.knee.value = 10;
-  loopCompressor.ratio.value = 4;
-  loopCompressor.attack.value = 0.003;
-  loopCompressor.release.value = 0.1;
+  loopCompressor.threshold.value = -1;
+  loopCompressor.knee.value = 0;
+  loopCompressor.ratio.value = 20;
+  loopCompressor.attack.value = 0.001;
+  loopCompressor.release.value = 0.05;
   loopGain.connect(loopCompressor);
   loopCompressor.connect(loopAudioCtx.destination);
 
