@@ -64,21 +64,37 @@ function swapLoopBuffer(newBuf) {
   loopStartTime = loopAudioCtx.currentTime - newStartOffset;
 }
 
-async function ensureLoopCtx() {
-  if (loopAudioCtx) return true;
+const IOS_SILENCE = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+
+async function unlockSpeaker() {
   try {
+    const audioEl = document.getElementById("ios-speaker-unlock");
+    audioEl.src = IOS_SILENCE;
+    audioEl.setAttribute("playsinline", "");
+    await audioEl.play().catch(() => {});
+  } catch(e) {}
+}
+
+// Copy an AudioBuffer into a different AudioContext (needed when we recreate the context)
+function rebufferInCtx(buf, ctx) {
+  const out = ctx.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
+  for (let c = 0; c < buf.numberOfChannels; c++) out.copyToChannel(buf.getChannelData(c), c);
+  return out;
+}
+
+async function ensureLoopCtx() {
+  if (loopAudioCtx && loopStream) return true;
+  try {
+    // If coming from a playback-only context, close it so iOS releases the media session
+    if (loopAudioCtx && !loopStream) {
+      await loopAudioCtx.close().catch(() => {});
+      loopAudioCtx = null;
+    }
     loopStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     });
     loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // iOS: unlock main speaker instead of earpiece
-    try {
-      const audioEl = document.getElementById("ios-speaker-unlock");
-      const silenceData = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-      audioEl.src = silenceData;
-      audioEl.setAttribute("playsinline", "");
-      await audioEl.play().catch(() => {});
-    } catch(e) {}
+    await unlockSpeaker();
     return true;
   } catch(e) { alert("Cannot access microphone:\n" + e.message); return false; }
 }
@@ -187,8 +203,23 @@ async function looperRec() {
     metroMuteForRec(false);
     looperStatus.textContent = "Processing…"; looperStatus.className = "looper-status processing";
     const blob = new Blob(recordedChunks, { type: "audio/webm" });
+
+    // Decode and process while mic context is still alive
     const raw = await loopAudioCtx.decodeAudioData(await blob.arrayBuffer());
-    loopBuffer = trimAndCrossfade(raw);
+    const processed = trimAndCrossfade(raw);
+
+    // Stop the microphone stream and recreate the AudioContext without it.
+    // On iOS, having getUserMedia active forces the audio session into "voice call" mode
+    // (low-volume earpiece routing). Releasing the mic lets iOS switch to the "media
+    // playback" session — the same loud path used by native apps like Telegram.
+    loopStream.getTracks().forEach(t => t.stop());
+    loopStream = null;
+    await loopAudioCtx.close().catch(() => {});
+    loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await unlockSpeaker();
+
+    // Copy the processed buffer into the new context
+    loopBuffer = rebufferInCtx(processed, loopAudioCtx);
     loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
     loopDuration = loopStretchedBuffer.duration;
     drawWaveform(loopBuffer);
