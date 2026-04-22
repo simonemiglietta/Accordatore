@@ -83,15 +83,15 @@ function trimAndCrossfade(buffer) {
   const sr = buffer.sampleRate, ch = buffer.numberOfChannels;
   const data = [];
   for (let i = 0; i < ch; i++) data.push(buffer.getChannelData(i));
-  const THRESH = 0.02, FRAME = 256, len = data[0].length;
+  const THRESH_START = 0.02, THRESH_END = 0.005, FRAME = 256, len = data[0].length;
   let startS = 0, endS = len;
   for (let i = 0; i < len - FRAME; i += FRAME) {
     let rms = 0; for (let j = 0; j < FRAME; j++) rms += data[0][i+j]**2;
-    if (Math.sqrt(rms/FRAME) > THRESH) { startS = Math.max(0, i - FRAME); break; }
+    if (Math.sqrt(rms/FRAME) > THRESH_START) { startS = Math.max(0, i - FRAME); break; }
   }
   for (let i = len - FRAME; i > startS; i -= FRAME) {
     let rms = 0; for (let j = 0; j < FRAME; j++) rms += data[0][i+j]**2;
-    if (Math.sqrt(rms/FRAME) > THRESH) { endS = Math.min(len, i + FRAME*2); break; }
+    if (Math.sqrt(rms/FRAME) > THRESH_END) { endS = Math.min(len, i + FRAME*12); break; }
   }
   const trimLen = endS - startS;
   if (trimLen < sr * 0.1) return buffer;
