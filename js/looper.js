@@ -17,17 +17,10 @@ const lbtnPlay       = document.getElementById("lbtn-play");
 const lbtnStop       = document.getElementById("lbtn-stop");
 const lbtnClear      = document.getElementById("lbtn-clear");
 const loopProgress   = document.getElementById("loop-progress");
-const loopVolSlider  = document.getElementById("loop-vol");
-const loopVolVal     = document.getElementById("loop-vol-val");
 const loopSpeedSlider = document.getElementById("loop-speed");
 const loopSpeedVal   = document.getElementById("loop-speed-val");
 const loopCanvas     = document.getElementById("looper-waveform");
 const waveformCtx    = loopCanvas.getContext("2d");
-
-function setLoopVol(v) {
-  loopVolVal.textContent = v + "%";
-  if (loopGain) loopGain.gain.value = v / 100;
-}
 
 let loopStretchDebounce = null;
 let loopSpeedPending = 1.0;
@@ -119,6 +112,21 @@ function trimAndCrossfade(buffer) {
       dst[i] = dst[i] * (1 - (i - (trimLen - xfLen)) / xfLen);
     }
   }
+
+  // Peak normalize to -1dBFS
+  let peak = 0;
+  for (let c2 = 0; c2 < ch; c2++) {
+    const dst = out.getChannelData(c2);
+    for (let i = 0; i < trimLen; i++) if (Math.abs(dst[i]) > peak) peak = Math.abs(dst[i]);
+  }
+  if (peak > 0.001) {
+    const gain = Math.min(0.89 / peak, 8.0); // max 8x boost (~18dB), target -1dBFS
+    for (let c2 = 0; c2 < ch; c2++) {
+      const dst = out.getChannelData(c2);
+      for (let i = 0; i < trimLen; i++) dst[i] *= gain;
+    }
+  }
+
   return out;
 }
 
@@ -202,7 +210,8 @@ function looperPlay() {
   if (loopState === "playing") { looperStop(); return; }
 
   loopGain = loopAudioCtx.createGain();
-  loopGain.gain.value = parseInt(loopVolSlider.value) / 100;
+  loopGain.gain.value = 1.0; // fixed at max — buffer is already normalized to -1dBFS
+
   // Limiter only — prevents hard clipping without compressing the signal body
   loopCompressor = loopAudioCtx.createDynamicsCompressor();
   loopCompressor.threshold.value = -1;
@@ -291,5 +300,4 @@ lbtnRec.addEventListener('click', looperRec);
 lbtnPlay.addEventListener('click', looperPlay);
 lbtnStop.addEventListener('click', looperStop);
 lbtnClear.addEventListener('click', looperClear);
-loopVolSlider.addEventListener('input', e => setLoopVol(e.target.value));
 loopSpeedSlider.addEventListener('input', e => setLoopSpeed(e.target.value));
