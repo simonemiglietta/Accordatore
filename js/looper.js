@@ -3,36 +3,32 @@ import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
 
 let loopAudioCtx = null, loopStream = null;
 let mediaRecorder = null, recordedChunks = [];
-let loopBuffer = null;
-let loopStretchedBuffer = null;
-let loopPCM = null; // raw Float32Array data, survives AudioContext close
+let loopBuffer = null, loopStretchedBuffer = null;
 let loopSource = null, loopGain = null, loopCompressor = null;
 let loopState = "idle";
 let loopStartTime = 0, loopDuration = 0;
 let loopAnimRaf = null;
 let loopSpeed = 1.0;
 
-const looperStatus   = document.getElementById("looper-status");
-const lbtnRec        = document.getElementById("lbtn-rec");
-const lbtnPlay       = document.getElementById("lbtn-play");
-const lbtnStop       = document.getElementById("lbtn-stop");
-const lbtnClear      = document.getElementById("lbtn-clear");
-const loopProgress   = document.getElementById("loop-progress");
+const looperStatus    = document.getElementById("looper-status");
+const lbtnRec         = document.getElementById("lbtn-rec");
+const lbtnPlay        = document.getElementById("lbtn-play");
+const lbtnStop        = document.getElementById("lbtn-stop");
+const lbtnClear       = document.getElementById("lbtn-clear");
+const loopProgress    = document.getElementById("loop-progress");
 const loopSpeedSlider = document.getElementById("loop-speed");
-const loopSpeedVal   = document.getElementById("loop-speed-val");
-const loopCanvas     = document.getElementById("looper-waveform");
-const waveformCtx    = loopCanvas.getContext("2d");
+const loopSpeedVal    = document.getElementById("loop-speed-val");
+const loopCanvas      = document.getElementById("looper-waveform");
+const waveformCtx     = loopCanvas.getContext("2d");
 
 let loopStretchDebounce = null;
-let loopSpeedPending = 1.0;
 
 function setLoopSpeed(v) {
   loopSpeed = parseInt(v) / 100;
   loopSpeedVal.textContent = v + "%";
   if (!loopBuffer) return;
   clearTimeout(loopStretchDebounce);
-  loopSpeedPending = loopSpeed;
-  loopStretchDebounce = setTimeout(() => applyStretchInBackground(loopSpeedPending), 300);
+  loopStretchDebounce = setTimeout(() => applyStretchInBackground(loopSpeed), 300);
 }
 
 function applyStretchInBackground(rate) {
@@ -42,11 +38,9 @@ function applyStretchInBackground(rate) {
     const newBuf = wsola(loopBuffer, rate);
     loopStretchedBuffer = newBuf;
     if (loopState === "playing") swapLoopBuffer(newBuf);
-    looperStatus.textContent = loopBuffer
-      ? (loopState === "playing"
-          ? "▶ Loop — " + Math.round(rate * 100) + "%"
-          : "Sample ready — " + loopBuffer.duration.toFixed(2) + "s")
-      : "Press REC to start";
+    looperStatus.textContent = loopState === "playing"
+      ? "▶ Loop — " + Math.round(rate * 100) + "%"
+      : "Sample ready — " + loopBuffer.duration.toFixed(2) + "s";
     looperStatus.className = loopState === "playing" ? "looper-status playing" : "looper-status";
   }, 10);
 }
@@ -65,37 +59,22 @@ function swapLoopBuffer(newBuf) {
   loopStartTime = loopAudioCtx.currentTime - newStartOffset;
 }
 
-const IOS_SILENCE = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
-
-async function unlockSpeaker() {
-  try {
-    const audioEl = document.getElementById("ios-speaker-unlock");
-    audioEl.src = IOS_SILENCE;
-    audioEl.setAttribute("playsinline", "");
-    await audioEl.play().catch(() => {});
-  } catch(e) {}
-}
-
-// Copy an AudioBuffer into a different AudioContext (needed when we recreate the context)
-function rebufferInCtx(buf, ctx) {
-  const out = ctx.createBuffer(buf.numberOfChannels, buf.length, buf.sampleRate);
-  for (let c = 0; c < buf.numberOfChannels; c++) out.copyToChannel(buf.getChannelData(c), c);
-  return out;
-}
-
 async function ensureLoopCtx() {
   if (loopAudioCtx && loopStream) return true;
   try {
-    // If coming from a playback-only context, close it so iOS releases the media session
-    if (loopAudioCtx && !loopStream) {
-      await loopAudioCtx.close().catch(() => {});
-      loopAudioCtx = null;
-    }
     loopStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
     });
-    loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    await unlockSpeaker();
+    if (!loopAudioCtx) {
+      loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      // iOS: play silent audio to route to main speaker instead of earpiece
+      try {
+        const el = document.getElementById("ios-speaker-unlock");
+        el.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAEA";
+        el.setAttribute("playsinline", "");
+        await el.play().catch(() => {});
+      } catch(e) {}
+    }
     return true;
   } catch(e) { alert("Cannot access microphone:\n" + e.message); return false; }
 }
@@ -118,8 +97,8 @@ function trimAndCrossfade(buffer) {
   if (trimLen < sr * 0.1) return buffer;
   const xfLen = Math.min(Math.floor(sr * 0.03), Math.floor(trimLen * 0.1));
   const out = loopAudioCtx.createBuffer(ch, trimLen, sr);
-  for (let c2 = 0; c2 < ch; c2++) {
-    const src = data[c2], dst = out.getChannelData(c2);
+  for (let c = 0; c < ch; c++) {
+    const src = data[c], dst = out.getChannelData(c);
     for (let i = 0; i < trimLen; i++) dst[i] = src[startS + i];
     for (let i = 0; i < xfLen; i++) {
       const t = i / xfLen;
@@ -129,21 +108,19 @@ function trimAndCrossfade(buffer) {
       dst[i] = dst[i] * (1 - (i - (trimLen - xfLen)) / xfLen);
     }
   }
-
-  // Peak normalize to -1dBFS
+  // Peak normalize to -1 dBFS
   let peak = 0;
-  for (let c2 = 0; c2 < ch; c2++) {
-    const dst = out.getChannelData(c2);
+  for (let c = 0; c < ch; c++) {
+    const dst = out.getChannelData(c);
     for (let i = 0; i < trimLen; i++) if (Math.abs(dst[i]) > peak) peak = Math.abs(dst[i]);
   }
   if (peak > 0.001) {
-    const gain = Math.min(0.89 / peak, 8.0); // max 8x boost (~18dB), target -1dBFS
-    for (let c2 = 0; c2 < ch; c2++) {
-      const dst = out.getChannelData(c2);
-      for (let i = 0; i < trimLen; i++) dst[i] *= gain;
+    const g = Math.min(0.89 / peak, 8.0);
+    for (let c = 0; c < ch; c++) {
+      const dst = out.getChannelData(c);
+      for (let i = 0; i < trimLen; i++) dst[i] *= g;
     }
   }
-
   return out;
 }
 
@@ -156,9 +133,9 @@ function wsola(buffer, rate) {
   const hopOut    = Math.round(sr * 0.02);
   const hopIn     = Math.round(hopOut * rate);
   const outBuf = loopAudioCtx.createBuffer(ch, outLen, sr);
-  for (let c2 = 0; c2 < ch; c2++) {
-    const inp = buffer.getChannelData(c2);
-    const out = outBuf.getChannelData(c2);
+  for (let c = 0; c < ch; c++) {
+    const inp = buffer.getChannelData(c);
+    const out = outBuf.getChannelData(c);
     const win = new Float32Array(frameSize);
     for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2*Math.PI*i/(frameSize-1)));
     let inPos = 0, outPos = 0;
@@ -204,37 +181,11 @@ async function looperRec() {
     metroMuteForRec(false);
     looperStatus.textContent = "Processing…"; looperStatus.className = "looper-status processing";
     const blob = new Blob(recordedChunks, { type: "audio/webm" });
-
-    // Decode and process while mic context is still alive
     const raw = await loopAudioCtx.decodeAudioData(await blob.arrayBuffer());
-    const processed = trimAndCrossfade(raw);
-
-    // Stop the microphone stream and recreate the AudioContext without it.
-    // On iOS, having getUserMedia active forces the audio session into "voice call" mode
-    // (low-volume earpiece routing). Releasing the mic lets iOS switch to the "media
-    // playback" session — the same loud path used by native apps like Telegram.
-    // Copy PCM to plain Float32Arrays BEFORE closing the context —
-    // on iOS/Safari the AudioBuffer data is invalidated when the context closes.
-    loopPCM = {
-      ch: processed.numberOfChannels,
-      sr: processed.sampleRate,
-      len: processed.length,
-      dur: processed.duration,
-      data: Array.from({length: processed.numberOfChannels}, (_, c) =>
-        new Float32Array(processed.getChannelData(c)))
-    };
-    drawWaveform(processed); // draw before context closes
-
-    loopStream.getTracks().forEach(t => t.stop());
-    loopStream = null;
-    // Close the mic-associated context so iOS releases the "voice call" audio
-    // session. The new context is created in looperPlay() under a user gesture,
-    // which assigns the "media playback" session (full speaker volume).
-    await loopAudioCtx.close().catch(() => {});
-    loopAudioCtx = null;
-    loopBuffer = null;
-    loopStretchedBuffer = null;
-    loopDuration = loopPCM.dur;
+    loopBuffer = trimAndCrossfade(raw);
+    loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
+    loopDuration = loopStretchedBuffer.duration;
+    drawWaveform(loopBuffer);
     looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
     looperStatus.className = "looper-status";
     lbtnPlay.disabled = false; lbtnClear.disabled = false;
@@ -249,29 +200,16 @@ async function looperRec() {
 }
 
 async function looperPlay() {
-  if (!loopPCM || loopState === "recording") return;
+  if (!loopStretchedBuffer || loopState === "recording") return;
   if (loopState === "playing") { looperStop(); return; }
 
-  if (!loopAudioCtx) {
-    // First play after recording: create context under user gesture so iOS assigns
-    // the "media playback" audio session (full speaker volume).
-    loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    await unlockSpeaker();
-    // Reconstruct AudioBuffer from the raw PCM saved before context close
-    const buf = loopAudioCtx.createBuffer(loopPCM.ch, loopPCM.len, loopPCM.sr);
-    for (let c = 0; c < loopPCM.ch; c++) buf.copyToChannel(loopPCM.data[c], c);
-    loopBuffer = buf;
-    loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
-    loopDuration = loopStretchedBuffer.duration;
-  } else {
-    await unlockSpeaker();
-    await loopAudioCtx.resume();
-  }
+  // iOS suspends the context when the app is backgrounded; resume under user gesture
+  await loopAudioCtx.resume();
 
   loopGain = loopAudioCtx.createGain();
-  loopGain.gain.value = 1.0; // fixed at max — buffer is already normalized to -1dBFS
+  loopGain.gain.value = 2.5; // boost to compensate for low mic input level
 
-  // Limiter only — prevents hard clipping without compressing the signal body
+  // Brick-wall limiter to prevent clipping at the boosted gain
   loopCompressor = loopAudioCtx.createDynamicsCompressor();
   loopCompressor.threshold.value = -1;
   loopCompressor.knee.value = 0;
@@ -305,18 +243,18 @@ function looperStop() {
   if (wasPlaying) releaseWakeLock();
   if (loopAnimRaf) { cancelAnimationFrame(loopAnimRaf); loopAnimRaf = null; }
   loopState = "idle"; loopProgress.style.width = "0%";
-  looperStatus.textContent = loopPCM ? `Sample ready — ${loopPCM.dur.toFixed(2)}s` : "Press REC to start";
+  looperStatus.textContent = loopBuffer ? `Sample ready — ${loopBuffer.duration.toFixed(2)}s` : "Press REC to start";
   looperStatus.className = "looper-status";
   lbtnPlay.classList.remove("play-active");
   lbtnPlay.querySelector(".licon").textContent = "▶";
   lbtnRec.classList.remove("rec-active");
   lbtnStop.disabled = true;
-  if (loopPCM) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
+  if (loopBuffer) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
 }
 
 function looperClear() {
   looperStop();
-  loopBuffer = null; loopStretchedBuffer = null; loopPCM = null; loopDuration = 0;
+  loopBuffer = null; loopStretchedBuffer = null; loopDuration = 0;
   loopSpeedSlider.value = 100; loopSpeedVal.textContent = "100%"; loopSpeed = 1.0;
   loopSpeedSlider.disabled = true;
   drawWaveform(null);
