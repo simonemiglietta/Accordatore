@@ -683,7 +683,7 @@
   <button class="tab-btn" data-tab="chord">Accordi</button>
 </div>
 
-<!-- ══ TAB ACCORDATORE ══ -->
+<!-- ══ TAB TUNER ══ -->
 <div class="tab-panel active" id="tab-tuner">
   <div class="tunings-row" id="tunings-row"></div>
   <div class="strings-grid" id="strings-grid"></div>
@@ -732,15 +732,10 @@
         <span class="licon">■</span><span class="llabel">STOP</span>
       </button>
       <button class="lbtn" id="lbtn-clear" disabled>
-        <span class="licon">✕</span><span class="llabel">CANCELLA</span>
+        <span class="licon">✕</span><span class="llabel">CLEAR</span>
       </button>
     </div>
 
-    <div class="loop-ctrl-row">
-      <span class="loop-ctrl-label">Loop volume</span>
-      <input type="range" id="loop-vol" min="0" max="400" step="1" value="150">
-      <span class="loop-ctrl-val" id="loop-vol-val">150%</span>
-    </div>
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Speed</span>
       <input type="range" id="loop-speed" min="25" max="100" step="1" value="100" disabled>
@@ -788,7 +783,6 @@
     </div>
   </div>
 </div><!-- /tab-looper -->
-
 
 <!-- ══ TAB CHORD FINDER ══ -->
 <div class="tab-panel" id="tab-chord">
