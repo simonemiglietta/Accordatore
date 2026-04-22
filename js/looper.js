@@ -207,7 +207,7 @@ async function looperPlay() {
   await loopAudioCtx.resume();
 
   loopGain = loopAudioCtx.createGain();
-  loopGain.gain.value = 2.5; // boost to compensate for low mic input level
+  loopGain.gain.value = 8.0; // aggressive boost — limiter below catches clipping
 
   // Brick-wall limiter to prevent clipping at the boosted gain
   loopCompressor = loopAudioCtx.createDynamicsCompressor();
