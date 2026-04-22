@@ -216,7 +216,8 @@ async function looperRec() {
     loopStream = null;
     await loopAudioCtx.close().catch(() => {});
     loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    await unlockSpeaker();
+    // unlockSpeaker() intentionally NOT called here — iOS blocks audio.play()
+    // without a user gesture. It will be called in looperPlay() instead.
 
     // Copy the processed buffer into the new context
     loopBuffer = rebufferInCtx(processed, loopAudioCtx);
@@ -236,9 +237,14 @@ async function looperRec() {
   lbtnRec.classList.add("rec-active"); lbtnStop.disabled = false; lbtnPlay.disabled = true;
 }
 
-function looperPlay() {
+async function looperPlay() {
   if (!loopStretchedBuffer || loopState === "recording") return;
   if (loopState === "playing") { looperStop(); return; }
+
+  // Resume context (iOS suspends it when created without a user gesture)
+  // and re-unlock the speaker — both require a user gesture, which we have here.
+  await unlockSpeaker();
+  await loopAudioCtx.resume();
 
   loopGain = loopAudioCtx.createGain();
   loopGain.gain.value = 1.0; // fixed at max — buffer is already normalized to -1dBFS
