@@ -214,14 +214,15 @@ async function looperRec() {
     // playback" session — the same loud path used by native apps like Telegram.
     loopStream.getTracks().forEach(t => t.stop());
     loopStream = null;
+    // Close the mic-associated context. AudioBuffer data survives context close.
+    // A new context is created in looperPlay() under a real user gesture —
+    // iOS refuses to resume a context created here (no user gesture).
     await loopAudioCtx.close().catch(() => {});
-    loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // unlockSpeaker() intentionally NOT called here — iOS blocks audio.play()
-    // without a user gesture. It will be called in looperPlay() instead.
+    loopAudioCtx = null;
 
-    // Copy the processed buffer into the new context
-    loopBuffer = rebufferInCtx(processed, loopAudioCtx);
-    loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
+    // wsola needs an AudioContext, so defer stretching to looperPlay().
+    loopBuffer = processed;
+    loopStretchedBuffer = processed;
     loopDuration = loopStretchedBuffer.duration;
     drawWaveform(loopBuffer);
     looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
@@ -238,13 +239,22 @@ async function looperRec() {
 }
 
 async function looperPlay() {
-  if (!loopStretchedBuffer || loopState === "recording") return;
+  if (!loopBuffer || loopState === "recording") return;
   if (loopState === "playing") { looperStop(); return; }
 
-  // Resume context (iOS suspends it when created without a user gesture)
-  // and re-unlock the speaker — both require a user gesture, which we have here.
-  await unlockSpeaker();
-  await loopAudioCtx.resume();
+  // After recording, the old context was closed to release iOS's voice-call audio
+  // session. We create a fresh one here, under a real user gesture, so iOS assigns
+  // the media-playback session (full speaker volume).
+  if (!loopAudioCtx) {
+    loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    await unlockSpeaker();
+    loopBuffer = rebufferInCtx(loopBuffer, loopAudioCtx);
+    loopStretchedBuffer = loopSpeed < 0.99 ? wsola(loopBuffer, loopSpeed) : loopBuffer;
+    loopDuration = loopStretchedBuffer.duration;
+  } else {
+    await unlockSpeaker();
+    await loopAudioCtx.resume();
+  }
 
   loopGain = loopAudioCtx.createGain();
   loopGain.gain.value = 1.0; // fixed at max — buffer is already normalized to -1dBFS
