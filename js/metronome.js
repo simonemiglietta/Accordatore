@@ -182,6 +182,17 @@ function trainerOnBeat() {
   trainerUpdateStatus();
 }
 
+export function getMetroInfo() {
+  if (!metroRunning || !metroAudioCtx) return null;
+  const beatDurMs = 60000 / metroBpm;
+  const barDurMs = beatDurMs * metroBeats;
+  const msToNextBeat = Math.max(0, (metroNextTime - metroAudioCtx.currentTime) * 1000);
+  const beatsUntilBar = metroCurBeat === 0 ? 0 : (metroBeats - metroCurBeat);
+  let msToNextBar = msToNextBeat + beatsUntilBar * beatDurMs;
+  if (msToNextBar < 150) msToNextBar += barDurMs;
+  return { bpm: metroBpm, beats: metroBeats, beatDurMs, barDurMs, msToNextBeat, msToNextBar };
+}
+
 // ── Event listeners ───────────────────────────────
 metroToggleBtn.addEventListener('click', metroToggle);
 

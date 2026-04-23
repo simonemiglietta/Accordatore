@@ -1,4 +1,4 @@
-import { metroMuteForRec } from './metronome.js';
+import { metroMuteForRec, getMetroInfo } from './metronome.js';
 import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
 
 let loopAudioCtx = null, loopStream = null;
@@ -9,6 +9,8 @@ let loopState = "idle";
 let loopStartTime = 0, loopDuration = 0;
 let loopAnimRaf = null;
 let loopSpeed = 1.0;
+let countInTimers = [];
+function clearCountInTimers() { countInTimers.forEach(clearTimeout); countInTimers = []; }
 
 const looperStatus    = document.getElementById("looper-status");
 const lbtnRec         = document.getElementById("lbtn-rec");
@@ -166,19 +168,19 @@ function wsola(buffer, rate) {
   return outBuf;
 }
 
-async function looperRec() {
-  if (loopState === "recording") return;
-  if (loopState === "playing") looperStop();
-  if (!await ensureLoopCtx()) return;
-
-  metroMuteForRec(true);
+function startRecording() {
   recordedChunks = []; loopBuffer = null; loopStretchedBuffer = null;
   drawWaveform(null); loopProgress.style.width = "0%";
+  metroMuteForRec(true);
 
   mediaRecorder = new MediaRecorder(loopStream);
   mediaRecorder.ondataavailable = e => { if (e.data.size > 0) recordedChunks.push(e.data); };
   mediaRecorder.onstop = async () => {
     metroMuteForRec(false);
+    clearCountInTimers();
+    loopState = "idle";
+    lbtnRec.classList.remove("rec-active");
+    lbtnStop.disabled = true;
     looperStatus.textContent = "Processing…"; looperStatus.className = "looper-status processing";
     const blob = new Blob(recordedChunks, { type: "audio/webm" });
     const raw = await loopAudioCtx.decodeAudioData(await blob.arrayBuffer());
@@ -189,7 +191,6 @@ async function looperRec() {
     looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
     looperStatus.className = "looper-status";
     lbtnPlay.disabled = false; lbtnClear.disabled = false;
-    lbtnRec.classList.remove("rec-active");
     loopSpeedSlider.disabled = false;
   };
 
@@ -199,8 +200,43 @@ async function looperRec() {
   lbtnRec.classList.add("rec-active"); lbtnStop.disabled = false; lbtnPlay.disabled = true;
 }
 
+function scheduleCountdown(msToTarget, beatDurMs, prefix, activeState) {
+  const totalBeats = Math.max(1, Math.round(msToTarget / beatDurMs));
+  for (let i = 0; i < totalBeats; i++) {
+    const fireAt = Math.max(0, msToTarget - (totalBeats - i) * beatDurMs);
+    const remaining = totalBeats - i;
+    countInTimers.push(setTimeout(() => {
+      if (loopState !== activeState) return;
+      looperStatus.textContent = `${prefix} ${remaining}`;
+      looperStatus.className = "looper-status recording";
+    }, fireAt));
+  }
+}
+
+async function looperRec() {
+  if (loopState === "recording" || loopState === "counting-in" || loopState === "stopping") return;
+  if (loopState === "playing") looperStop();
+  if (!await ensureLoopCtx()) return;
+
+  const metro = getMetroInfo();
+  if (metro) {
+    loopState = "counting-in";
+    lbtnRec.classList.add("rec-active");
+    lbtnStop.disabled = false; lbtnPlay.disabled = true;
+
+    const { beatDurMs, msToNextBar } = metro;
+    scheduleCountdown(msToNextBar, beatDurMs, "●", "counting-in");
+    countInTimers.push(setTimeout(() => {
+      if (loopState !== "counting-in") return;
+      startRecording();
+    }, msToNextBar));
+  } else {
+    startRecording();
+  }
+}
+
 async function looperPlay() {
-  if (!loopStretchedBuffer || loopState === "recording") return;
+  if (!loopStretchedBuffer || loopState === "recording" || loopState === "counting-in" || loopState === "stopping") return;
   if (loopState === "playing") { looperStop(); return; }
 
   // iOS suspends the context when the app is backgrounded; resume under user gesture
@@ -237,11 +273,45 @@ async function looperPlay() {
 }
 
 function looperStop() {
-  const wasPlaying = loopState === "playing";
+  if (loopState === "counting-in") {
+    clearCountInTimers();
+    loopState = "idle";
+    lbtnRec.classList.remove("rec-active");
+    lbtnStop.disabled = true;
+    looperStatus.textContent = loopBuffer ? `Sample ready — ${loopBuffer.duration.toFixed(2)}s` : "Press REC to start";
+    looperStatus.className = "looper-status";
+    if (loopBuffer) { lbtnPlay.disabled = false; lbtnClear.disabled = false; }
+    return;
+  }
+
+  if (loopState === "stopping") {
+    // Second press: force immediate stop
+    clearCountInTimers();
+    if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+    return;
+  }
+
+  if (loopState === "recording") {
+    const metro = getMetroInfo();
+    if (metro && metro.msToNextBar <= 2 * metro.barDurMs) {
+      loopState = "stopping";
+      const { beatDurMs, msToNextBar } = metro;
+      scheduleCountdown(msToNextBar, beatDurMs, "◼", "stopping");
+      countInTimers.push(setTimeout(() => {
+        if (loopState === "stopping" && mediaRecorder && mediaRecorder.state === "recording") {
+          mediaRecorder.stop();
+        }
+      }, msToNextBar));
+      return;
+    }
+    if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
+    return;
+  }
+
+  // Playing: immediate stop
   if (loopSource) { try { loopSource.stop(); } catch(e) {} loopSource = null; }
-  if (mediaRecorder && mediaRecorder.state === "recording") mediaRecorder.stop();
-  if (wasPlaying) releaseWakeLock();
   if (loopAnimRaf) { cancelAnimationFrame(loopAnimRaf); loopAnimRaf = null; }
+  releaseWakeLock();
   loopState = "idle"; loopProgress.style.width = "0%";
   looperStatus.textContent = loopBuffer ? `Sample ready — ${loopBuffer.duration.toFixed(2)}s` : "Press REC to start";
   looperStatus.className = "looper-status";
