@@ -634,15 +634,16 @@
 
   /* ── Export / Import buttons ── */
   .loop-io-btn {
-    width: 32px; height: 32px; flex-shrink: 0;
+    height: 32px; flex-shrink: 0;
+    padding: 0 10px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: transparent;
     color: var(--text-dim);
-    font-family: var(--font); font-size: 14px;
+    font-family: var(--font); font-size: 13px;
     cursor: pointer; transition: all 0.12s;
     -webkit-tap-highlight-color: transparent;
-    display: flex; align-items: center; justify-content: center;
+    display: flex; align-items: center; justify-content: center; gap: 4px;
   }
   .loop-io-btn:active { color: var(--text); border-color: var(--green); transform: scale(0.95); }
   .loop-io-btn:disabled { opacity: 0.2; pointer-events: none; }
@@ -759,7 +760,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v30</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v31</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -838,8 +839,8 @@
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Countdown</span>
       <button class="loop-cdown-btn active" id="loop-countdown-toggle">●</button>
-      <button class="loop-io-btn" id="loop-export-btn" disabled title="Export loop as WAV">▼</button>
-      <button class="loop-io-btn" id="loop-import-btn" title="Import audio file">▲</button>
+      <button class="loop-io-btn" id="loop-export-btn" disabled>▼ export</button>
+      <button class="loop-io-btn" id="loop-import-btn">▲ import</button>
       <input type="file" id="loop-import-file" style="display:none">
     </div>
   </div>
