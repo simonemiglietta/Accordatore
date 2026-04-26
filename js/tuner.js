@@ -11,11 +11,13 @@ export const TUNINGS = {
 const STRING_LABELS = ["6th","5th","4th","3rd","2nd","1st"];
 const HISTORY_SIZE = 20;
 
+const _savedCustom = localStorage.getItem("custom-tuning");
 export const state = {
   tunings: JSON.parse(JSON.stringify(TUNINGS)),
   currentTuning: "Standard",
   selectedString: 0,
 };
+if (_savedCustom) state.tunings["Custom"] = JSON.parse(_savedCustom);
 
 let tunerAudioCtx = null, analyser = null, tunerRaf = null, micStream = null, tunerOn = false;
 let centsHistory = [], lastHistoryTime = 0;
@@ -347,6 +349,7 @@ document.getElementById("apply-btn").addEventListener('click', () => {
     return;
   }
   state.tunings["Custom"] = newNotes;
+  localStorage.setItem("custom-tuning", JSON.stringify(newNotes));
   state.currentTuning = "Custom";
   state.selectedString = 0;
   buildTuningBtns();
