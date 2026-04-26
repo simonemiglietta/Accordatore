@@ -426,9 +426,15 @@ function bufferToWav(buffer) {
   return new Blob([ab], { type: 'audio/wav' });
 }
 
-function loopExport() {
+async function loopExport() {
   if (!loopBuffer) return;
-  const url = URL.createObjectURL(bufferToWav(loopBuffer));
+  const wav = bufferToWav(loopBuffer);
+  const file = new File([wav], 'loop.wav', { type: 'audio/wav' });
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'loop.wav' }); } catch(e) {}
+    return;
+  }
+  const url = URL.createObjectURL(wav);
   const a = document.createElement('a');
   a.href = url; a.download = 'loop.wav'; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 5000);
