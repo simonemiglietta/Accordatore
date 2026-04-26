@@ -6,6 +6,7 @@ export const TUNINGS = {
   "Open G":   ["D2","G2","D3","G3","B3","D4"],
   "DADGAD":   ["D2","A2","D3","G3","A3","D4"],
   "Open E":   ["E2","B2","E3","G#3","B3","E4"],
+  "Custom":   ["E2","A2","D3","G3","B3","E4"],
 };
 const STRING_LABELS = ["6th","5th","4th","3rd","2nd","1st"];
 const HISTORY_SIZE = 20;
@@ -22,6 +23,8 @@ let centsHistory = [], lastHistoryTime = 0;
 // DOM refs
 const tuningsRow        = document.getElementById("tunings-row");
 const stringsGrid       = document.getElementById("strings-grid");
+const customEditPanel   = document.getElementById("custom-edit-panel");
+const editCustomBtn     = document.getElementById("edit-custom-btn");
 const detectedNote      = document.getElementById("detected-note");
 const detectedFreq      = document.getElementById("detected-freq");
 const centsLabel        = document.getElementById("cents-label");
@@ -30,6 +33,23 @@ const dotEl             = document.getElementById("dot");
 const btnLabel          = document.getElementById("btn-label");
 const historyBar        = document.getElementById("history-bar");
 const sensitivitySlider = document.getElementById("sensitivity");
+
+let customEditing = false;
+
+function enterEditMode() {
+  customEditing = true;
+  buildCustomInputs();
+  stringsGrid.style.display = "none";
+  customEditPanel.style.display = "block";
+  editCustomBtn.style.display = "none";
+}
+
+function exitEditMode() {
+  customEditing = false;
+  stringsGrid.style.display = "";
+  customEditPanel.style.display = "none";
+  editCustomBtn.style.display = state.currentTuning === "Custom" ? "block" : "none";
+}
 
 for (let i = 0; i < HISTORY_SIZE; i++) {
   const b = document.createElement("div");
@@ -71,6 +91,7 @@ export function buildTuningBtns() {
     b.className = "tuning-btn" + (name === state.currentTuning ? " active" : "");
     b.textContent = name;
     b.addEventListener('click', () => {
+      if (customEditing) exitEditMode();
       state.currentTuning = name;
       state.selectedString = 0;
       buildTuningBtns();
@@ -80,6 +101,7 @@ export function buildTuningBtns() {
     });
     tuningsRow.appendChild(b);
   });
+  editCustomBtn.style.display = state.currentTuning === "Custom" ? "block" : "none";
 }
 
 export function buildStringBtns() {
@@ -329,6 +351,9 @@ document.getElementById("apply-btn").addEventListener('click', () => {
   state.selectedString = 0;
   buildTuningBtns();
   buildStringBtns();
-  buildCustomInputs();
   resetHistory();
+  exitEditMode();
 });
+
+document.getElementById("cancel-btn").addEventListener('click', exitEditMode);
+editCustomBtn.addEventListener('click', enterEditMode);

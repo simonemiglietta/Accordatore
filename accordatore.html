@@ -546,21 +546,22 @@
   .chord-ctrl-row input[type=range] { flex: 1; }
   .chord-ctrl-val { font-size: 12px; color: var(--text); min-width: 20px; text-align: right; }
 
-  /* ── Custom ── */
-  .custom-section {
-    background: var(--surface);
-    border: 1px solid var(--border);
+  /* ── Custom inline edit ── */
+  #custom-edit-panel { margin-bottom: 16px; }
+  .edit-custom-btn {
+    font-size: 9px; font-family: var(--font);
+    letter-spacing: 1.5px; text-transform: uppercase;
+    padding: 4px 10px;
     border-radius: var(--radius);
-    padding: 1rem;
-    position: relative;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    cursor: pointer; transition: all 0.15s;
+    margin-bottom: 14px; display: block;
+    -webkit-tap-highlight-color: transparent;
   }
-  .custom-section::before {
-    content: '[ CUSTOM TUNING ]';
-    position: absolute; top: -8px; left: 12px;
-    font-size: 9px; letter-spacing: 2px;
-    background: var(--bg); padding: 0 6px; color: var(--text-muted);
-  }
-  .custom-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; margin-top: 8px; }
+  .edit-custom-btn:active { border-color: var(--green); color: var(--text); background: var(--green-glow); }
+  .custom-inputs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 10px; }
   .custom-inputs input {
     width: 100%; font-size: 15px; font-family: var(--font); text-align: center;
     padding: 8px 4px;
@@ -571,8 +572,9 @@
     text-shadow: 0 0 4px var(--green);
   }
   .custom-inputs input:focus { outline: none; border-color: var(--green); background: var(--green-glow); }
+  .custom-actions-row { display: flex; gap: 8px; }
   .apply-btn {
-    width: 100%; padding: 10px;
+    flex: 2; padding: 10px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: transparent;
@@ -582,6 +584,17 @@
     cursor: pointer; transition: all 0.15s;
   }
   .apply-btn:active { border-color: var(--green); color: var(--text); background: var(--green-glow); }
+  .cancel-btn {
+    flex: 1; padding: 10px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 10px; font-family: var(--font);
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.15s;
+  }
+  .cancel-btn:active { border-color: var(--red); color: var(--red); }
 
   /* ── Tap Tempo ── */
   .tap-btn {
@@ -731,18 +744,25 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v22</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v23</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
   <button class="tab-btn" data-tab="looper">Looper</button>
-  <button class="tab-btn" data-tab="custom">Custom</button>
-  <button class="tab-btn" data-tab="chord">Accordi</button>
+  <button class="tab-btn" data-tab="chord">Chords</button>
 </div>
 
 <!-- ══ TAB TUNER ══ -->
 <div class="tab-panel active" id="tab-tuner">
   <div class="tunings-row" id="tunings-row"></div>
+  <button id="edit-custom-btn" class="edit-custom-btn" style="display:none">✎ Edit notes</button>
+  <div id="custom-edit-panel" style="display:none">
+    <div class="custom-inputs" id="custom-inputs"></div>
+    <div class="custom-actions-row">
+      <button class="cancel-btn" id="cancel-btn">✕ Cancel</button>
+      <button class="apply-btn" id="apply-btn">✓ Apply</button>
+    </div>
+  </div>
   <div class="strings-grid" id="strings-grid"></div>
   <div class="meter-card">
     <div class="note-display">
@@ -870,13 +890,6 @@
   </button>
 </div><!-- /tab-chord -->
 
-<!-- ══ TAB CUSTOM ══ -->
-<div class="tab-panel" id="tab-custom">
-  <div class="custom-section">
-    <div class="custom-inputs" id="custom-inputs"></div>
-    <button class="apply-btn" id="apply-btn">Apply custom tuning</button>
-  </div>
-</div><!-- /tab-custom -->
 
 <script type="module" src="js/app.js"></script>
 </body>

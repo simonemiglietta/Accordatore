@@ -1,4 +1,4 @@
-import { buildTuningBtns, buildStringBtns, buildCustomInputs } from './tuner.js';
+import { buildTuningBtns, buildStringBtns } from './tuner.js';
 import './looper.js';
 import './metronome.js';
 import './chord.js';
@@ -31,7 +31,6 @@ initSliders();
 // Init tuner UI
 buildTuningBtns();
 buildStringBtns();
-buildCustomInputs();
 
 // Splash title fade (single call)
 setTimeout(() => {
