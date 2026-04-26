@@ -1,6 +1,39 @@
 import { metroMuteForRec, getMetroInfo } from './metronome.js';
 import { acquireWakeLock, releaseWakeLock } from './wakelock.js';
 
+// ── IndexedDB helpers ─────────────────────────────
+function idbOpen() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open("guitar-looper", 1);
+    req.onupgradeneeded = e => e.target.result.createObjectStore("loop");
+    req.onsuccess = e => res(e.target.result);
+    req.onerror = () => rej(req.error);
+  });
+}
+async function idbSave(blob) {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction("loop", "readwrite");
+    tx.objectStore("loop").put(blob, "current");
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+async function idbLoad() {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const req = db.transaction("loop", "readonly").objectStore("loop").get("current");
+    req.onsuccess = () => res(req.result || null); req.onerror = () => rej(req.error);
+  });
+}
+async function idbClear() {
+  const db = await idbOpen();
+  return new Promise((res, rej) => {
+    const tx = db.transaction("loop", "readwrite");
+    tx.objectStore("loop").delete("current");
+    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+  });
+}
+
 let loopAudioCtx = null, loopStream = null;
 let mediaRecorder = null, recordedChunks = [];
 let loopBuffer = null, loopStretchedBuffer = null;
@@ -205,6 +238,7 @@ function startRecording() {
     looperStatus.className = "looper-status";
     lbtnPlay.disabled = false; lbtnClear.disabled = false;
     loopSpeedSlider.disabled = false; setSpeedBtnsDisabled(false);
+    idbSave(blob).catch(() => {});
   };
 
   mediaRecorder.start();
@@ -352,6 +386,7 @@ function looperStop() {
 
 function looperClear() {
   looperStop();
+  idbClear().catch(() => {});
   loopBuffer = null; loopStretchedBuffer = null; loopDuration = 0;
   loopSpeedSlider.value = 100; loopSpeedVal.textContent = "100%"; loopSpeed = 1.0;
   loopSpeedSlider.disabled = true; setSpeedBtnsDisabled(true);
@@ -389,6 +424,24 @@ function drawWaveform(buffer) {
 }
 
 drawWaveform(null);
+
+// ── Restore saved loop on startup ─────────────────
+(async () => {
+  try {
+    const blob = await idbLoad();
+    if (!blob) return;
+    if (!loopAudioCtx) loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const raw = await loopAudioCtx.decodeAudioData(await blob.arrayBuffer());
+    loopBuffer = trimAndCrossfade(raw);
+    loopStretchedBuffer = loopBuffer;
+    loopDuration = loopBuffer.duration;
+    drawWaveform(loopBuffer);
+    looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
+    looperStatus.className = "looper-status";
+    lbtnPlay.disabled = false; lbtnClear.disabled = false;
+    loopSpeedSlider.disabled = false; setSpeedBtnsDisabled(false);
+  } catch(e) {}
+})();
 
 // ── Event listeners ───────────────────────────────
 lbtnRec.addEventListener('click', looperRec);
