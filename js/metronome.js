@@ -29,6 +29,7 @@ function metroBpmChange(v) {
 export function metroAdjBpm(delta) {
   metroBpm = Math.max(40, Math.min(240, metroBpm + delta));
   metroBpmSlider.value = metroBpm;
+  metroBpmSlider.dispatchEvent(new Event('input'));
   metroBpmValEl.textContent = metroBpm;
 }
 
@@ -207,6 +208,7 @@ function tapTempo() {
   const bpm = Math.max(40, Math.min(240, Math.round(60000 / (total / (tapTimes.length - 1)))));
   metroBpm = bpm;
   metroBpmSlider.value = bpm;
+  metroBpmSlider.dispatchEvent(new Event('input'));
   metroBpmValEl.textContent = bpm;
   if (metroRunning) {
     metroNextTime = metroAudioCtx.currentTime + 0.05;

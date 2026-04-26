@@ -404,4 +404,5 @@ speedStepBtns.forEach(btn => {
 loopCdownToggle.addEventListener('click', () => {
   countdownEnabled = !countdownEnabled;
   loopCdownToggle.classList.toggle("active", countdownEnabled);
+  loopCdownToggle.textContent = countdownEnabled ? "●" : "○";
 });

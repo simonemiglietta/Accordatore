@@ -604,20 +604,34 @@
 
   /* ── Countdown toggle ── */
   .loop-cdown-btn {
-    padding: 5px 14px;
+    width: 32px; height: 32px; flex-shrink: 0;
     border-radius: var(--radius);
     border: 1px solid var(--border);
-    background: var(--surface2);
+    background: transparent;
     color: var(--text-muted);
-    font-size: 9px; font-family: var(--font);
-    letter-spacing: 2px; text-transform: uppercase;
-    cursor: pointer; transition: all 0.12s;
+    font-family: var(--font); font-size: 14px;
+    cursor: pointer; transition: all 0.15s;
     -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
   }
   .loop-cdown-btn.active {
-    border-color: var(--green); color: var(--text);
-    background: var(--green-glow); text-shadow: 0 0 5px var(--green);
+    border-color: var(--green); color: var(--green);
+    background: var(--green-glow); text-shadow: 0 0 6px var(--green);
   }
+
+  /* ── Speed step buttons ── */
+  .speed-step-btn {
+    width: 28px; height: 28px; flex-shrink: 0;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: var(--font); font-size: 16px;
+    cursor: pointer; transition: all 0.12s; -webkit-tap-highlight-color: transparent;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .speed-step-btn:active { color: var(--text); border-color: var(--green); transform: scale(0.9); }
+  .speed-step-btn:disabled { opacity: 0.2; pointer-events: none; }
 
   /* ── Range inputs ── */
   input[type=range] {
@@ -717,7 +731,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v21</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v22</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -781,14 +795,14 @@
 
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Speed</span>
-      <button class="metro-step-btn speed-step-btn" data-delta="-5" disabled>−</button>
+      <button class="speed-step-btn" data-delta="-5" disabled>−</button>
       <input type="range" id="loop-speed" min="25" max="100" step="1" value="100" disabled>
-      <button class="metro-step-btn speed-step-btn" data-delta="5" disabled>+</button>
+      <button class="speed-step-btn" data-delta="5" disabled>+</button>
       <span class="loop-ctrl-val" id="loop-speed-val">100%</span>
     </div>
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Countdown</span>
-      <button class="loop-cdown-btn active" id="loop-countdown-toggle">3 · 2 · 1</button>
+      <button class="loop-cdown-btn active" id="loop-countdown-toggle">●</button>
     </div>
   </div>
 
