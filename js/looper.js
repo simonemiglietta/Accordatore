@@ -57,6 +57,9 @@ const loopCanvas        = document.getElementById("looper-waveform");
 const waveformCtx       = loopCanvas.getContext("2d");
 const loopCdownToggle   = document.getElementById("loop-countdown-toggle");
 const speedStepBtns     = document.querySelectorAll(".speed-step-btn");
+const lbtnExport        = document.getElementById("loop-export-btn");
+const lbtnImport        = document.getElementById("loop-import-btn");
+const loopImportFile    = document.getElementById("loop-import-file");
 
 let loopStretchDebounce = null;
 let countdownEnabled = true;
@@ -236,7 +239,7 @@ function startRecording() {
     drawWaveform(loopBuffer);
     looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
     looperStatus.className = "looper-status";
-    lbtnPlay.disabled = false; lbtnClear.disabled = false;
+    lbtnPlay.disabled = false; lbtnClear.disabled = false; lbtnExport.disabled = false;
     loopSpeedSlider.disabled = false; setSpeedBtnsDisabled(false);
     idbSave(blob).catch(() => {});
   };
@@ -392,7 +395,7 @@ function looperClear() {
   loopSpeedSlider.disabled = true; setSpeedBtnsDisabled(true);
   drawWaveform(null);
   looperStatus.textContent = "Press REC to start"; looperStatus.className = "looper-status";
-  lbtnPlay.disabled = true; lbtnClear.disabled = true; lbtnStop.disabled = true;
+  lbtnPlay.disabled = true; lbtnClear.disabled = true; lbtnStop.disabled = true; lbtnExport.disabled = true;
 }
 
 function animateProgress() {
@@ -400,6 +403,62 @@ function animateProgress() {
   const elapsed = (loopAudioCtx.currentTime - loopStartTime) % loopDuration;
   loopProgress.style.width = ((elapsed / loopDuration) * 100).toFixed(1) + "%";
   loopAnimRaf = requestAnimationFrame(animateProgress);
+}
+
+function bufferToWav(buffer) {
+  const numCh = buffer.numberOfChannels, sr = buffer.sampleRate, n = buffer.length;
+  const dataSize = n * numCh * 2;
+  const ab = new ArrayBuffer(44 + dataSize);
+  const v = new DataView(ab);
+  const w = (o, s) => { for (let i = 0; i < s.length; i++) v.setUint8(o + i, s.charCodeAt(i)); };
+  w(0, 'RIFF'); v.setUint32(4, 36 + dataSize, true); w(8, 'WAVE');
+  w(12, 'fmt '); v.setUint32(16, 16, true); v.setUint16(20, 1, true);
+  v.setUint16(22, numCh, true); v.setUint32(24, sr, true);
+  v.setUint32(28, sr * numCh * 2, true); v.setUint16(32, numCh * 2, true);
+  v.setUint16(34, 16, true); w(36, 'data'); v.setUint32(40, dataSize, true);
+  let off = 44;
+  for (let i = 0; i < n; i++) {
+    for (let c = 0; c < numCh; c++) {
+      const s = Math.max(-1, Math.min(1, buffer.getChannelData(c)[i]));
+      v.setInt16(off, s < 0 ? s * 0x8000 : s * 0x7FFF, true); off += 2;
+    }
+  }
+  return new Blob([ab], { type: 'audio/wav' });
+}
+
+function loopExport() {
+  if (!loopBuffer) return;
+  const url = URL.createObjectURL(bufferToWav(loopBuffer));
+  const a = document.createElement('a');
+  a.href = url; a.download = 'loop.wav'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
+async function loopImport(file) {
+  if (!file) return;
+  if (loopState === "recording" || loopState === "counting-in" || loopState === "stopping") return;
+  if (loopState === "playing") looperStop();
+  try {
+    looperStatus.textContent = "Importing…"; looperStatus.className = "looper-status processing";
+    if (!loopAudioCtx) loopAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const raw = await loopAudioCtx.decodeAudioData(await file.arrayBuffer());
+    loopSpeed = 1.0; loopSpeedSlider.value = 100; loopSpeedVal.textContent = "100%";
+    loopBuffer = trimAndCrossfade(raw);
+    loopStretchedBuffer = loopBuffer;
+    loopDuration = loopBuffer.duration;
+    idbSave(file).catch(() => {});
+    drawWaveform(loopBuffer);
+    looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
+    looperStatus.className = "looper-status";
+    lbtnPlay.disabled = false; lbtnClear.disabled = false; lbtnExport.disabled = false;
+    loopSpeedSlider.disabled = false; setSpeedBtnsDisabled(false);
+  } catch(e) {
+    looperStatus.textContent = loopBuffer
+      ? `Sample ready — ${loopBuffer.duration.toFixed(2)}s`
+      : "Press REC to start";
+    looperStatus.className = "looper-status";
+    alert("Cannot import:\n" + e.message);
+  }
 }
 
 function drawWaveform(buffer) {
@@ -438,7 +497,7 @@ drawWaveform(null);
     drawWaveform(loopBuffer);
     looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
     looperStatus.className = "looper-status";
-    lbtnPlay.disabled = false; lbtnClear.disabled = false;
+    lbtnPlay.disabled = false; lbtnClear.disabled = false; lbtnExport.disabled = false;
     loopSpeedSlider.disabled = false; setSpeedBtnsDisabled(false);
   } catch(e) {}
 })();
@@ -458,4 +517,11 @@ loopCdownToggle.addEventListener('click', () => {
   countdownEnabled = !countdownEnabled;
   loopCdownToggle.classList.toggle("active", countdownEnabled);
   loopCdownToggle.textContent = countdownEnabled ? "●" : "○";
+});
+
+lbtnExport.addEventListener('click', loopExport);
+lbtnImport.addEventListener('click', () => loopImportFile.click());
+loopImportFile.addEventListener('change', e => {
+  loopImport(e.target.files[0]);
+  loopImportFile.value = '';
 });
