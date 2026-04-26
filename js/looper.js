@@ -231,7 +231,20 @@ async function looperRec() {
       startRecording();
     }, msToNextBar));
   } else {
-    startRecording();
+    loopState = "counting-in";
+    lbtnRec.classList.add("rec-active");
+    lbtnStop.disabled = false; lbtnPlay.disabled = true;
+    [3, 2, 1].forEach((n, i) => {
+      countInTimers.push(setTimeout(() => {
+        if (loopState !== "counting-in") return;
+        looperStatus.textContent = `● ${n}`;
+        looperStatus.className = "looper-status recording";
+      }, i * 1000));
+    });
+    countInTimers.push(setTimeout(() => {
+      if (loopState !== "counting-in") return;
+      startRecording();
+    }, 3000));
   }
 }
 

@@ -583,6 +583,25 @@
   }
   .apply-btn:active { border-color: var(--green); color: var(--text); background: var(--green-glow); }
 
+  /* ── Tap Tempo ── */
+  .tap-btn {
+    width: 100%; padding: 13px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-dim);
+    font-size: 11px; font-family: var(--font);
+    letter-spacing: 3px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.08s;
+    -webkit-tap-highlight-color: transparent;
+    margin-bottom: 9px;
+  }
+  .tap-btn:active {
+    border-color: var(--green); color: var(--text);
+    background: var(--green-glow); transform: scale(0.97);
+    text-shadow: 0 0 6px var(--green);
+  }
+
   /* ── Range inputs ── */
   input[type=range] {
     -webkit-appearance: none;
@@ -681,7 +700,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v19</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v20</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -759,6 +778,7 @@
       <span class="metro-bpm-val" id="metro-bpm-val">120</span>
       <span class="metro-bpm-unit">BPM</span>
     </div>
+    <button class="tap-btn" id="tap-btn">TAP TEMPO</button>
     <div class="metro-sig-row">
       <button class="metro-sig-btn" data-beats="2">2/4</button>
       <button class="metro-sig-btn" data-beats="3">3/4</button>

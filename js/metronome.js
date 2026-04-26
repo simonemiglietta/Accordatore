@@ -193,6 +193,26 @@ export function getMetroInfo() {
   return { bpm: metroBpm, beats: metroBeats, beatDurMs, barDurMs, msToNextBeat, msToNextBar };
 }
 
+// ── Tap Tempo ─────────────────────────────────────
+let tapTimes = [];
+
+function tapTempo() {
+  const now = Date.now();
+  if (tapTimes.length > 0 && now - tapTimes[tapTimes.length - 1] > 3000) tapTimes = [];
+  tapTimes.push(now);
+  if (tapTimes.length < 2) return;
+  if (tapTimes.length > 8) tapTimes = tapTimes.slice(-8);
+  let total = 0;
+  for (let i = 1; i < tapTimes.length; i++) total += tapTimes[i] - tapTimes[i - 1];
+  const bpm = Math.max(40, Math.min(240, Math.round(60000 / (total / (tapTimes.length - 1)))));
+  metroBpm = bpm;
+  metroBpmSlider.value = bpm;
+  metroBpmValEl.textContent = bpm;
+  if (metroRunning) {
+    metroNextTime = metroAudioCtx.currentTime + 0.05;
+  }
+}
+
 // ── Event listeners ───────────────────────────────
 metroToggleBtn.addEventListener('click', metroToggle);
 
@@ -218,3 +238,6 @@ document.querySelectorAll('.trainer-step-btn').forEach(btn => {
 document.querySelectorAll('.trainer-period-btn').forEach(btn => {
   btn.addEventListener('click', () => trainerPeriodAdj(parseInt(btn.dataset.delta)));
 });
+
+document.getElementById("tap-btn").addEventListener('click', tapTempo);
+document.getElementById("tap-btn").addEventListener('touchstart', e => { e.preventDefault(); tapTempo(); }, { passive: false });
