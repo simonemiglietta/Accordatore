@@ -585,12 +585,12 @@
 
   /* ── Tap Tempo ── */
   .tap-btn {
-    width: 100%; padding: 13px;
+    width: 100%; padding: 28px 13px;
     border-radius: var(--radius);
     border: 1px solid var(--border);
     background: var(--surface2);
     color: var(--text-dim);
-    font-size: 11px; font-family: var(--font);
+    font-size: 13px; font-family: var(--font);
     letter-spacing: 3px; text-transform: uppercase;
     cursor: pointer; transition: all 0.08s;
     -webkit-tap-highlight-color: transparent;
@@ -600,6 +600,23 @@
     border-color: var(--green); color: var(--text);
     background: var(--green-glow); transform: scale(0.97);
     text-shadow: 0 0 6px var(--green);
+  }
+
+  /* ── Countdown toggle ── */
+  .loop-cdown-btn {
+    padding: 5px 14px;
+    border-radius: var(--radius);
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--text-muted);
+    font-size: 9px; font-family: var(--font);
+    letter-spacing: 2px; text-transform: uppercase;
+    cursor: pointer; transition: all 0.12s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .loop-cdown-btn.active {
+    border-color: var(--green); color: var(--text);
+    background: var(--green-glow); text-shadow: 0 0 5px var(--green);
   }
 
   /* ── Range inputs ── */
@@ -700,7 +717,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v20</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v21</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -764,8 +781,14 @@
 
     <div class="loop-ctrl-row">
       <span class="loop-ctrl-label">Speed</span>
+      <button class="metro-step-btn speed-step-btn" data-delta="-5" disabled>−</button>
       <input type="range" id="loop-speed" min="25" max="100" step="1" value="100" disabled>
+      <button class="metro-step-btn speed-step-btn" data-delta="5" disabled>+</button>
       <span class="loop-ctrl-val" id="loop-speed-val">100%</span>
+    </div>
+    <div class="loop-ctrl-row">
+      <span class="loop-ctrl-label">Countdown</span>
+      <button class="loop-cdown-btn active" id="loop-countdown-toggle">3 · 2 · 1</button>
     </div>
   </div>
 

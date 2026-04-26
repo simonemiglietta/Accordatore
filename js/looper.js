@@ -12,25 +12,38 @@ let loopSpeed = 1.0;
 let countInTimers = [];
 function clearCountInTimers() { countInTimers.forEach(clearTimeout); countInTimers = []; }
 
-const looperStatus    = document.getElementById("looper-status");
-const lbtnRec         = document.getElementById("lbtn-rec");
-const lbtnPlay        = document.getElementById("lbtn-play");
-const lbtnStop        = document.getElementById("lbtn-stop");
-const lbtnClear       = document.getElementById("lbtn-clear");
-const loopProgress    = document.getElementById("loop-progress");
-const loopSpeedSlider = document.getElementById("loop-speed");
-const loopSpeedVal    = document.getElementById("loop-speed-val");
-const loopCanvas      = document.getElementById("looper-waveform");
-const waveformCtx     = loopCanvas.getContext("2d");
+const looperStatus      = document.getElementById("looper-status");
+const lbtnRec           = document.getElementById("lbtn-rec");
+const lbtnPlay          = document.getElementById("lbtn-play");
+const lbtnStop          = document.getElementById("lbtn-stop");
+const lbtnClear         = document.getElementById("lbtn-clear");
+const loopProgress      = document.getElementById("loop-progress");
+const loopSpeedSlider   = document.getElementById("loop-speed");
+const loopSpeedVal      = document.getElementById("loop-speed-val");
+const loopCanvas        = document.getElementById("looper-waveform");
+const waveformCtx       = loopCanvas.getContext("2d");
+const loopCdownToggle   = document.getElementById("loop-countdown-toggle");
+const speedStepBtns     = document.querySelectorAll(".speed-step-btn");
 
 let loopStretchDebounce = null;
+let countdownEnabled = true;
+
+function setSpeedBtnsDisabled(disabled) {
+  speedStepBtns.forEach(b => b.disabled = disabled);
+}
 
 function setLoopSpeed(v) {
   loopSpeed = parseInt(v) / 100;
+  loopSpeedSlider.value = v;
   loopSpeedVal.textContent = v + "%";
   if (!loopBuffer) return;
   clearTimeout(loopStretchDebounce);
   loopStretchDebounce = setTimeout(() => applyStretchInBackground(loopSpeed), 300);
+}
+
+function adjustLoopSpeed(delta) {
+  const newVal = Math.max(25, Math.min(100, parseInt(loopSpeedSlider.value) + delta));
+  setLoopSpeed(newVal);
 }
 
 function applyStretchInBackground(rate) {
@@ -191,7 +204,7 @@ function startRecording() {
     looperStatus.textContent = `Sample ready — ${loopBuffer.duration.toFixed(2)}s`;
     looperStatus.className = "looper-status";
     lbtnPlay.disabled = false; lbtnClear.disabled = false;
-    loopSpeedSlider.disabled = false;
+    loopSpeedSlider.disabled = false; setSpeedBtnsDisabled(false);
   };
 
   mediaRecorder.start();
@@ -230,7 +243,7 @@ async function looperRec() {
       if (loopState !== "counting-in") return;
       startRecording();
     }, msToNextBar));
-  } else {
+  } else if (countdownEnabled) {
     loopState = "counting-in";
     lbtnRec.classList.add("rec-active");
     lbtnStop.disabled = false; lbtnPlay.disabled = true;
@@ -245,6 +258,8 @@ async function looperRec() {
       if (loopState !== "counting-in") return;
       startRecording();
     }, 3000));
+  } else {
+    startRecording();
   }
 }
 
@@ -339,7 +354,7 @@ function looperClear() {
   looperStop();
   loopBuffer = null; loopStretchedBuffer = null; loopDuration = 0;
   loopSpeedSlider.value = 100; loopSpeedVal.textContent = "100%"; loopSpeed = 1.0;
-  loopSpeedSlider.disabled = true;
+  loopSpeedSlider.disabled = true; setSpeedBtnsDisabled(true);
   drawWaveform(null);
   looperStatus.textContent = "Press REC to start"; looperStatus.className = "looper-status";
   lbtnPlay.disabled = true; lbtnClear.disabled = true; lbtnStop.disabled = true;
@@ -381,3 +396,12 @@ lbtnPlay.addEventListener('click', looperPlay);
 lbtnStop.addEventListener('click', looperStop);
 lbtnClear.addEventListener('click', looperClear);
 loopSpeedSlider.addEventListener('input', e => setLoopSpeed(e.target.value));
+
+speedStepBtns.forEach(btn => {
+  btn.addEventListener('click', () => adjustLoopSpeed(parseInt(btn.dataset.delta)));
+});
+
+loopCdownToggle.addEventListener('click', () => {
+  countdownEnabled = !countdownEnabled;
+  loopCdownToggle.classList.toggle("active", countdownEnabled);
+});
