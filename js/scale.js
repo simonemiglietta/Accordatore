@@ -21,7 +21,6 @@ let scaleAudioCtx = null;
 function ensureCtx() {
   if (!scaleAudioCtx) {
     scaleAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // iOS Safari unlock: must play audio synchronously within user gesture
     const silent = scaleAudioCtx.createBuffer(1, 1, scaleAudioCtx.sampleRate);
     const src = scaleAudioCtx.createBufferSource();
     src.buffer = silent;
@@ -50,36 +49,32 @@ function generatePattern() {
   return Array.from({ length: patternLen }, () => pool[Math.floor(Math.random() * pool.length)]);
 }
 
-// Each note is triggered "now" when its setTimeout fires — avoids iOS scheduling issues
-function pluck(ctx, freq) {
-  const t = ctx.currentTime + 0.005;
-  const decay = Math.min(60 / scaleBpm * 1.8, 2.4);
+function pluck(ctx, freq, startTime, beatDur) {
   const osc = ctx.createOscillator();
   const gain = ctx.createGain();
   osc.type = 'triangle';
   osc.frequency.value = freq;
   osc.connect(gain);
   gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0.6, t);
-  gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  osc.start(t);
-  osc.stop(t + decay + 0.05);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(0.55, startTime + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + Math.min(beatDur * 1.8, 2.5));
+  osc.start(startTime);
+  osc.stop(startTime + Math.min(beatDur * 1.8, 2.5) + 0.05);
 }
 
 function playPattern(pattern, onNote, onEnd) {
   ensureCtx();
-  const beatMs = 60000 / scaleBpm;
-  const startOffset = 80; // ms — lets context stabilise before first note
-
+  const beatDur = 60 / scaleBpm;
+  const t0 = scaleAudioCtx.currentTime + 0.2;
   pattern.forEach((note, i) => {
-    setTimeout(() => {
-      const freq = noteToFreq(note.name);
-      if (freq) pluck(scaleAudioCtx, freq);
-      onNote(i);
-    }, startOffset + i * beatMs);
+    const freq = noteToFreq(note.name);
+    if (freq) pluck(scaleAudioCtx, freq, t0 + i * beatDur, beatDur);
+    const delayMs = (t0 + i * beatDur - scaleAudioCtx.currentTime) * 1000;
+    setTimeout(() => onNote(i), Math.max(0, delayMs));
   });
-
-  setTimeout(onEnd, startOffset + pattern.length * beatMs);
+  const endMs = (t0 + pattern.length * beatDur - scaleAudioCtx.currentTime) * 1000;
+  setTimeout(onEnd, Math.max(0, endMs));
 }
 
 // ── DOM ───────────────────────────────────────────
@@ -138,8 +133,13 @@ function startPlay(pattern) {
   notesEl.style.display = 'none';
   renderDots(pattern);
 
-  playBtn.textContent = loopActive ? '■ Stop' : '▶ Play Pattern';
-  playBtn.disabled = !loopActive;
+  if (loopActive) {
+    playBtn.textContent = '■ Stop';
+    playBtn.disabled = false;
+  } else {
+    playBtn.textContent = '▶ Play Pattern';
+    playBtn.disabled = true;
+  }
 
   playPattern(
     pattern,
@@ -149,6 +149,7 @@ function startPlay(pattern) {
       isPlaying = false;
       renderDots(pattern);
       if (loopActive) {
+        // 1-beat pause between repetitions
         loopTimer = setTimeout(() => {
           if (loopActive) startPlay(pattern);
         }, 60000 / scaleBpm);
