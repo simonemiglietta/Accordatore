@@ -382,7 +382,7 @@ document.querySelectorAll('.scale-bpm-step').forEach(btn => {
 
 document.querySelectorAll('.scale-len-step').forEach(btn => {
   btn.addEventListener('click', () => {
-    patternLen = Math.max(4, Math.min(12, patternLen + parseInt(btn.dataset.delta)));
+    patternLen = Math.max(4, Math.min(16, patternLen + parseInt(btn.dataset.delta)));
     updateLenDisplay();
   });
 });
