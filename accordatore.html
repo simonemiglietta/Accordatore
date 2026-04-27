@@ -890,6 +890,18 @@
     border-color: var(--amber); color: var(--amber);
     background: rgba(255,176,0,0.1); text-shadow: none;
   }
+  .scale-dot.bend, .scale-dot.ho, .scale-dot.po {
+    font-size: 8px; display: flex; align-items: center; justify-content: center;
+  }
+  .scale-dot.bend { border-color: #f97; color: #f97; }
+  .scale-dot.bend.active { background: #f97; border-color: #f97; color: var(--bg); box-shadow: 0 0 8px #f97; transform: scale(1.3); }
+  .scale-dot.ho { border-color: #8cf; color: #8cf; }
+  .scale-dot.ho.active { background: #8cf; border-color: #8cf; color: var(--bg); box-shadow: 0 0 8px #8cf; transform: scale(1.3); }
+  .scale-dot.po { border-color: #c8f; color: #c8f; }
+  .scale-dot.po.active { background: #c8f; border-color: #c8f; color: var(--bg); box-shadow: 0 0 8px #c8f; transform: scale(1.3); }
+  .scale-note-pill.bend { border-color: #f97; color: #f97; background: rgba(255,153,119,0.1); text-shadow: none; }
+  .scale-note-pill.ho { border-color: #8cf; color: #8cf; background: rgba(136,204,255,0.1); text-shadow: none; }
+  .scale-note-pill.po { border-color: #c8f; color: #c8f; background: rgba(204,136,255,0.1); text-shadow: none; }
 </style>
 </head>
 <body>
@@ -899,7 +911,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v44</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v45</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -1079,6 +1091,7 @@
     <div class="scale-type-row" style="margin-bottom:14px">
       <button class="scale-diff-btn active" data-diff="easy">Easy</button>
       <button class="scale-diff-btn" data-diff="medium">Medium</button>
+      <button class="scale-diff-btn" data-diff="hard">Hard</button>
     </div>
     <div class="scale-bpm-row">
       <span class="scale-bpm-lbl">BPM</span>

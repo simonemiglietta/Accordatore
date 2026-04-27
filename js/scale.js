@@ -80,6 +80,7 @@ function buildNotePool() {
     });
   }
 
+  // Medium / Hard: sliding window across adjacent scale forms
   const windowSize = intervals.length * 2;
   const maxStart = Math.max(0, full.length - windowSize);
   const start = Math.floor(Math.random() * (maxStart + 1));
@@ -93,28 +94,40 @@ function generatePattern() {
   let cur = weightedPick(pool, pool.map(n => STABILITY[n.interval] ?? 1));
 
   if (difficulty === 'easy') {
-    const result = [{ ...cur, duration: 1, muted: false }];
+    const result = [{ ...cur, duration: 1, muted: false, technique: null }];
     for (let i = 1; i < patternLen; i++) {
       const w = pool.map(n => (STABILITY[n.interval] ?? 1) * spreadWeight(Math.abs(n.midi - cur.midi)));
       cur = weightedPick(pool, w);
-      result.push({ ...cur, duration: 1, muted: false });
+      result.push({ ...cur, duration: 1, muted: false, technique: null });
     }
     return result;
   }
 
-  // Medium: riempie patternLen beat con note (1 o 2 beat) e muting (15%)
-  const result = [{ ...cur, duration: 1, muted: false }];
+  // Medium / Hard: riempie patternLen beat con note (1 o 2 beat) e muting (15%)
+  const result = [{ ...cur, duration: 1, muted: false, technique: null }];
   let remaining = patternLen - 1;
 
   while (remaining > 0) {
     if (Math.random() < 0.15) {
-      result.push({ ...cur, label: '×', duration: 1, muted: true });
+      result.push({ ...cur, label: '×', duration: 1, muted: true, technique: null });
       remaining -= 1;
     } else {
       const w = pool.map(n => (STABILITY[n.interval] ?? 1) * spreadWeight(Math.abs(n.midi - cur.midi)));
+      const prev = cur;
       cur = weightedPick(pool, w);
       const duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
-      result.push({ ...cur, duration, muted: false });
+
+      let technique = null;
+      if (difficulty === 'hard') {
+        const semiDist = cur.midi - prev.midi;
+        if (Math.random() < 0.25 && Math.abs(semiDist) >= 1 && Math.abs(semiDist) <= 4) {
+          technique = semiDist > 0 ? 'ho' : 'po';
+        } else if (duration === 1 && Math.random() < 0.2) {
+          technique = 'bend';
+        }
+      }
+
+      result.push({ ...cur, duration, muted: false, technique });
       remaining -= duration;
     }
   }
@@ -122,8 +135,8 @@ function generatePattern() {
   return result;
 }
 
-// Karplus-Strong — beatMult allunga il decay per note prolungate
-function pluck(ctx, freq, beatMult = 1) {
+// Karplus-Strong — beatMult allunga il decay, amplitude regola l'attacco
+function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
   const sr = ctx.sampleRate;
   const period = Math.max(2, Math.round(sr / freq));
   const decay = Math.min(60 / scaleBpm * 2 * beatMult, 3.5);
@@ -136,12 +149,39 @@ function pluck(ctx, freq, beatMult = 1) {
   const src = ctx.createBufferSource();
   src.buffer = buf;
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.8, t);
+  gain.gain.setValueAtTime(amplitude, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
   src.connect(gain);
   gain.connect(ctx.destination);
   src.start(t);
   src.stop(t + decay + 0.05);
+}
+
+// Bending: oscillatore con ramp di frequenza +2 semitoni
+function playBend(ctx, freq, beatMult = 1) {
+  const t = ctx.currentTime + 0.005;
+  const decay = Math.min(60 / scaleBpm * 2 * beatMult, 3.5);
+  const targetFreq = freq * Math.pow(2, 2 / 12);
+
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(freq, t);
+  osc.frequency.exponentialRampToValueAtTime(targetFreq, t + Math.min(decay * 0.45, 0.7));
+
+  const filter = ctx.createBiquadFilter();
+  filter.type = 'lowpass';
+  filter.frequency.value = freq * 4;
+  filter.Q.value = 2;
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.35, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
+
+  osc.connect(filter);
+  filter.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(t);
+  osc.stop(t + decay + 0.05);
 }
 
 // Rumore impulsivo per simulare palm mute / nota smorzata
@@ -175,7 +215,14 @@ function playPattern(pattern, onNote, onEnd) {
         mute(scaleAudioCtx);
       } else {
         const freq = noteToFreq(note.name);
-        if (freq) pluck(scaleAudioCtx, freq, note.duration || 1);
+        if (freq) {
+          if (note.technique === 'bend') {
+            playBend(scaleAudioCtx, freq, note.duration || 1);
+          } else {
+            const amp = note.technique === 'ho' ? 0.3 : note.technique === 'po' ? 0.4 : 0.8;
+            pluck(scaleAudioCtx, freq, note.duration || 1, amp);
+          }
+        }
       }
       onNote(i);
     }, t);
@@ -199,16 +246,20 @@ const bpmSlider  = document.getElementById('scale-bpm');
 const bpmValEl   = document.getElementById('scale-bpm-val');
 const lenValEl   = document.getElementById('scale-len-val');
 
+const TECHNIQUE_SYMBOL = { bend: '↑', ho: 'h', po: 'p' };
+
 function renderDots(pattern, activeIdx = -1) {
   dotsEl.innerHTML = '';
   pattern.forEach((note, i) => {
     const d = document.createElement('div');
     let cls = 'scale-dot';
     if (i === activeIdx) cls += ' active';
-    if (note.muted)      cls += ' muted';
+    if (note.muted)          cls += ' muted';
     if (note.duration === 2) cls += ' long';
+    if (note.technique)      cls += ' ' + note.technique;
     d.className = cls;
-    if (note.muted) d.textContent = '×';
+    if (note.muted)          d.textContent = '×';
+    else if (note.technique) d.textContent = TECHNIQUE_SYMBOL[note.technique] ?? '';
     dotsEl.appendChild(d);
   });
 }
@@ -217,8 +268,11 @@ function renderNotes(pattern) {
   notesEl.innerHTML = '';
   pattern.forEach(note => {
     const pill = document.createElement('span');
-    pill.className = 'scale-note-pill' + (note.muted ? ' muted' : '');
-    pill.textContent = note.label + (note.duration === 2 ? ' ─' : '');
+    const tech = note.technique;
+    pill.className = 'scale-note-pill' + (note.muted ? ' muted' : tech ? ' ' + tech : '');
+    let label = note.label + (note.duration === 2 ? ' ─' : '');
+    if (tech) label += TECHNIQUE_SYMBOL[tech] ?? '';
+    pill.textContent = label;
     notesEl.appendChild(pill);
   });
   notesEl.style.display = 'flex';
