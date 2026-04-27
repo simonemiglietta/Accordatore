@@ -120,7 +120,7 @@ function generatePattern() {
       let technique = null;
       if (difficulty === 'hard') {
         const semiDist = cur.midi - prev.midi;
-        if (Math.random() < 0.25 && Math.abs(semiDist) >= 1 && Math.abs(semiDist) <= 4) {
+        if (Math.random() < 0.25 && Math.abs(semiDist) >= 1 && Math.abs(semiDist) <= 3) {
           technique = semiDist > 0 ? 'ho' : 'po';
         } else if (duration === 1 && Math.random() < 0.2) {
           technique = 'bend';
