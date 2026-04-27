@@ -788,14 +788,14 @@
   .scale-type-row {
     display: flex; gap: 5px; margin-bottom: 14px;
   }
-  .scale-type-btn {
+  .scale-type-btn, .scale-diff-btn {
     flex: 1; padding: 6px 4px; font-size: 9px; font-family: var(--font);
     letter-spacing: 0.5px; text-transform: uppercase; border-radius: var(--radius);
     border: 1px solid var(--border); background: transparent;
     color: var(--text-muted); cursor: pointer; transition: all 0.13s;
     -webkit-tap-highlight-color: transparent; text-align: center;
   }
-  .scale-type-btn.active {
+  .scale-type-btn.active, .scale-diff-btn.active {
     border-color: var(--green); color: var(--text);
     background: var(--green-glow); text-shadow: 0 0 5px var(--green);
   }
@@ -899,7 +899,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v43</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v44</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -1077,8 +1077,8 @@
     </div>
     <div class="scale-section-lbl">Difficulty</div>
     <div class="scale-type-row" style="margin-bottom:14px">
-      <button class="scale-type-btn scale-diff-btn active" data-diff="easy">Easy</button>
-      <button class="scale-type-btn scale-diff-btn" data-diff="medium">Medium</button>
+      <button class="scale-diff-btn active" data-diff="easy">Easy</button>
+      <button class="scale-diff-btn" data-diff="medium">Medium</button>
     </div>
     <div class="scale-bpm-row">
       <span class="scale-bpm-lbl">BPM</span>
