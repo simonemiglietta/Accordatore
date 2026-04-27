@@ -49,32 +49,42 @@ function generatePattern() {
   return Array.from({ length: patternLen }, () => pool[Math.floor(Math.random() * pool.length)]);
 }
 
-function pluck(ctx, freq, startTime, beatDur) {
-  const osc = ctx.createOscillator();
+// Karplus-Strong plucked string — triggered at ctx.currentTime when called
+function pluck(ctx, freq) {
+  const sr = ctx.sampleRate;
+  const period = Math.max(2, Math.round(sr / freq));
+  const decay = Math.min(60 / scaleBpm * 2, 3.0);
+  const bufLen = Math.ceil(sr * decay);
+  const buf = ctx.createBuffer(1, bufLen, sr);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < period; i++) d[i] = Math.random() * 2 - 1;
+  for (let i = period; i < bufLen; i++) d[i] = 0.499 * (d[i - period] + d[i - period + 1]);
+  const t = ctx.currentTime + 0.005;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
   const gain = ctx.createGain();
-  osc.type = 'triangle';
-  osc.frequency.value = freq;
-  osc.connect(gain);
+  gain.gain.setValueAtTime(0.8, t);
+  gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
+  src.connect(gain);
   gain.connect(ctx.destination);
-  gain.gain.setValueAtTime(0, startTime);
-  gain.gain.linearRampToValueAtTime(0.55, startTime + 0.008);
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + Math.min(beatDur * 1.8, 2.5));
-  osc.start(startTime);
-  osc.stop(startTime + Math.min(beatDur * 1.8, 2.5) + 0.05);
+  src.start(t);
+  src.stop(t + decay + 0.05);
 }
 
+// setTimeout-based scheduling: each note triggered exactly when its timer fires
 function playPattern(pattern, onNote, onEnd) {
   ensureCtx();
-  const beatDur = 60 / scaleBpm;
-  const t0 = scaleAudioCtx.currentTime + 0.2;
+  const beatMs = 60000 / scaleBpm;
+
   pattern.forEach((note, i) => {
-    const freq = noteToFreq(note.name);
-    if (freq) pluck(scaleAudioCtx, freq, t0 + i * beatDur, beatDur);
-    const delayMs = (t0 + i * beatDur - scaleAudioCtx.currentTime) * 1000;
-    setTimeout(() => onNote(i), Math.max(0, delayMs));
+    setTimeout(() => {
+      const freq = noteToFreq(note.name);
+      if (freq) pluck(scaleAudioCtx, freq);
+      onNote(i);
+    }, 80 + i * beatMs);
   });
-  const endMs = (t0 + pattern.length * beatDur - scaleAudioCtx.currentTime) * 1000;
-  setTimeout(onEnd, Math.max(0, endMs));
+
+  setTimeout(onEnd, 80 + pattern.length * beatMs);
 }
 
 // ── DOM ───────────────────────────────────────────
@@ -205,10 +215,10 @@ bpmSlider.addEventListener('input', e => {
 
 document.querySelectorAll('.scale-bpm-step').forEach(btn => {
   btn.addEventListener('click', () => {
-    scaleBpm = Math.max(40, Math.min(160, scaleBpm + parseInt(btn.dataset.delta)));
+    scaleBpm = Math.max(40, Math.min(240, scaleBpm + parseInt(btn.dataset.delta)));
     bpmSlider.value = scaleBpm;
     bpmValEl.textContent = scaleBpm;
-    const pct = ((scaleBpm - 40) / 120) * 100;
+    const pct = ((scaleBpm - 40) / 200) * 100;
     bpmSlider.style.setProperty('--fill', pct + '%');
   });
 });
