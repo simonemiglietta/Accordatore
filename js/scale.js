@@ -118,16 +118,18 @@ function generatePattern() {
       const duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
 
       let technique = null;
+      let fromLabel = null;
       if (difficulty === 'hard') {
         const semiDist = cur.midi - prev.midi;
         if (Math.random() < 0.25 && Math.abs(semiDist) >= 1 && Math.abs(semiDist) <= 3) {
           technique = semiDist > 0 ? 'ho' : 'po';
+          fromLabel = prev.label;
         } else if (duration === 1 && Math.random() < 0.2) {
           technique = 'bend';
         }
       }
 
-      result.push({ ...cur, duration, muted: false, technique });
+      result.push({ ...cur, duration, muted: false, technique, fromLabel });
       remaining -= duration;
     }
   }
@@ -332,8 +334,9 @@ function renderNotes(pattern) {
     const pill = document.createElement('span');
     const tech = note.technique;
     pill.className = 'scale-note-pill' + (note.muted ? ' muted' : tech ? ' ' + tech : '');
-    let label = note.label + (note.duration === 2 ? ' ─' : '');
-    if (tech) label += TECHNIQUE_SYMBOL[tech] ?? '';
+    const sym = tech ? (TECHNIQUE_SYMBOL[tech] ?? '') : '';
+    const dur = note.duration === 2 ? ' ─' : '';
+    let label = (note.fromLabel ? note.fromLabel + '→' : '') + note.label + dur + sym;
     pill.textContent = label;
     notesEl.appendChild(pill);
   });
