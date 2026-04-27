@@ -31,30 +31,55 @@ function ensureCtx() {
   if (scaleAudioCtx.state === 'suspended') scaleAudioCtx.resume();
 }
 
+// Stability weight by interval from root (0=tonic … 11=major seventh)
+const STABILITY = { 0: 4, 7: 3, 4: 2.5, 3: 2.5, 5: 2, 9: 2, 8: 1.5, 10: 1.5, 2: 1.2, 11: 1 };
+
+function spreadWeight(semitoneDist) {
+  if (semitoneDist === 0) return 0.6;   // same note: ok ma non esagerato
+  if (semitoneDist <= 3)  return 1.0;   // step / piccolo skip
+  if (semitoneDist <= 5)  return 0.65;  // skip
+  if (semitoneDist <= 8)  return 0.3;   // salto
+  return 0.1;                           // salto grande
+}
+
+function weightedPick(pool, weights) {
+  const total = weights.reduce((s, w) => s + w, 0);
+  let r = Math.random() * total;
+  for (let i = 0; i < pool.length; i++) {
+    r -= weights[i];
+    if (r <= 0) return pool[i];
+  }
+  return pool[pool.length - 1];
+}
+
 function buildNotePool() {
   const rootIdx = NOTE_NAMES.indexOf(scaleRoot);
   const intervals = SCALES[scaleType];
 
-  // Build full ascending pool across octaves 2–5
   const full = [];
   for (const oct of [2, 3, 4, 5]) {
     for (const interval of intervals) {
       const semitone = rootIdx + interval;
       const noteOct = oct + Math.floor(semitone / 12);
-      if (noteOct >= 2 && noteOct <= 5)
-        full.push({ name: NOTE_NAMES[semitone % 12] + noteOct, label: NOTE_NAMES[semitone % 12] });
+      if (noteOct >= 2 && noteOct <= 5) {
+        const label = NOTE_NAMES[semitone % 12];
+        full.push({
+          name: label + noteOct,
+          label,
+          midi: (noteOct + 1) * 12 + NOTE_NAMES.indexOf(label),
+          interval,
+        });
+      }
     }
   }
 
   if (difficulty === 'easy') {
-    // Fixed window: octaves 3–4 (same as before)
     return full.filter(n => {
       const oct = parseInt(n.name.slice(-1));
       return oct === 3 || oct === 4;
     });
   }
 
-  // Medium: random window spanning ~2 scale forms (2 × intervals.length notes)
   const windowSize = intervals.length * 2;
   const maxStart = Math.max(0, full.length - windowSize);
   const start = Math.floor(Math.random() * (maxStart + 1));
@@ -63,7 +88,22 @@ function buildNotePool() {
 
 function generatePattern() {
   const pool = buildNotePool();
-  return Array.from({ length: patternLen }, () => pool[Math.floor(Math.random() * pool.length)]);
+  if (!pool.length) return [];
+
+  // Prima nota: pesata per stabilità
+  let cur = weightedPick(pool, pool.map(n => STABILITY[n.interval] ?? 1));
+  const result = [cur];
+
+  for (let i = 1; i < patternLen; i++) {
+    const weights = pool.map(n => {
+      const stability = STABILITY[n.interval] ?? 1;
+      return stability * spreadWeight(Math.abs(n.midi - cur.midi));
+    });
+    cur = weightedPick(pool, weights);
+    result.push(cur);
+  }
+
+  return result;
 }
 
 // Karplus-Strong plucked string — triggered at ctx.currentTime when called
