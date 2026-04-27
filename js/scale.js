@@ -90,27 +90,43 @@ function generatePattern() {
   const pool = buildNotePool();
   if (!pool.length) return [];
 
-  // Prima nota: pesata per stabilità
   let cur = weightedPick(pool, pool.map(n => STABILITY[n.interval] ?? 1));
-  const result = [cur];
 
-  for (let i = 1; i < patternLen; i++) {
-    const weights = pool.map(n => {
-      const stability = STABILITY[n.interval] ?? 1;
-      return stability * spreadWeight(Math.abs(n.midi - cur.midi));
-    });
-    cur = weightedPick(pool, weights);
-    result.push(cur);
+  if (difficulty === 'easy') {
+    const result = [{ ...cur, duration: 1, muted: false }];
+    for (let i = 1; i < patternLen; i++) {
+      const w = pool.map(n => (STABILITY[n.interval] ?? 1) * spreadWeight(Math.abs(n.midi - cur.midi)));
+      cur = weightedPick(pool, w);
+      result.push({ ...cur, duration: 1, muted: false });
+    }
+    return result;
+  }
+
+  // Medium: riempie patternLen beat con note (1 o 2 beat) e muting (15%)
+  const result = [{ ...cur, duration: 1, muted: false }];
+  let remaining = patternLen - 1;
+
+  while (remaining > 0) {
+    if (Math.random() < 0.15) {
+      result.push({ ...cur, label: '×', duration: 1, muted: true });
+      remaining -= 1;
+    } else {
+      const w = pool.map(n => (STABILITY[n.interval] ?? 1) * spreadWeight(Math.abs(n.midi - cur.midi)));
+      cur = weightedPick(pool, w);
+      const duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
+      result.push({ ...cur, duration, muted: false });
+      remaining -= duration;
+    }
   }
 
   return result;
 }
 
-// Karplus-Strong plucked string — triggered at ctx.currentTime when called
-function pluck(ctx, freq) {
+// Karplus-Strong — beatMult allunga il decay per note prolungate
+function pluck(ctx, freq, beatMult = 1) {
   const sr = ctx.sampleRate;
   const period = Math.max(2, Math.round(sr / freq));
-  const decay = Math.min(60 / scaleBpm * 2, 3.0);
+  const decay = Math.min(60 / scaleBpm * 2 * beatMult, 3.5);
   const bufLen = Math.ceil(sr * decay);
   const buf = ctx.createBuffer(1, bufLen, sr);
   const d = buf.getChannelData(0);
@@ -128,20 +144,45 @@ function pluck(ctx, freq) {
   src.stop(t + decay + 0.05);
 }
 
-// setTimeout-based scheduling: each note triggered exactly when its timer fires
+// Rumore impulsivo per simulare palm mute / nota smorzata
+function mute(ctx) {
+  const t = ctx.currentTime + 0.005;
+  const sr = ctx.sampleRate;
+  const bufLen = Math.ceil(sr * 0.07);
+  const buf = ctx.createBuffer(1, bufLen, sr);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < bufLen; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / bufLen, 5);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.5, t);
+  src.connect(gain);
+  gain.connect(ctx.destination);
+  src.start(t);
+  src.stop(t + 0.08);
+}
+
+// Scheduling via setTimeout: ogni nota parte esattamente quando il timer scatta
 function playPattern(pattern, onNote, onEnd) {
   ensureCtx();
   const beatMs = 60000 / scaleBpm;
+  let timeMs = 80;
 
   pattern.forEach((note, i) => {
+    const t = timeMs;
     setTimeout(() => {
-      const freq = noteToFreq(note.name);
-      if (freq) pluck(scaleAudioCtx, freq);
+      if (note.muted) {
+        mute(scaleAudioCtx);
+      } else {
+        const freq = noteToFreq(note.name);
+        if (freq) pluck(scaleAudioCtx, freq, note.duration || 1);
+      }
       onNote(i);
-    }, 80 + i * beatMs);
+    }, t);
+    timeMs += (note.duration || 1) * beatMs;
   });
 
-  setTimeout(onEnd, 80 + pattern.length * beatMs);
+  setTimeout(onEnd, timeMs);
 }
 
 // ── DOM ───────────────────────────────────────────
@@ -160,9 +201,14 @@ const lenValEl   = document.getElementById('scale-len-val');
 
 function renderDots(pattern, activeIdx = -1) {
   dotsEl.innerHTML = '';
-  pattern.forEach((_, i) => {
+  pattern.forEach((note, i) => {
     const d = document.createElement('div');
-    d.className = 'scale-dot' + (i === activeIdx ? ' active' : '');
+    let cls = 'scale-dot';
+    if (i === activeIdx) cls += ' active';
+    if (note.muted)      cls += ' muted';
+    if (note.duration === 2) cls += ' long';
+    d.className = cls;
+    if (note.muted) d.textContent = '×';
     dotsEl.appendChild(d);
   });
 }
@@ -171,8 +217,8 @@ function renderNotes(pattern) {
   notesEl.innerHTML = '';
   pattern.forEach(note => {
     const pill = document.createElement('span');
-    pill.className = 'scale-note-pill';
-    pill.textContent = note.label;
+    pill.className = 'scale-note-pill' + (note.muted ? ' muted' : '');
+    pill.textContent = note.label + (note.duration === 2 ? ' ─' : '');
     notesEl.appendChild(pill);
   });
   notesEl.style.display = 'flex';
