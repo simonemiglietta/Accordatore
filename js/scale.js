@@ -15,9 +15,17 @@ let currentPattern = null;
 let isPlaying = false;
 let scaleAudioCtx = null;
 
-async function ensureCtx() {
-  if (!scaleAudioCtx) scaleAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (scaleAudioCtx.state === 'suspended') await scaleAudioCtx.resume();
+function ensureCtx() {
+  if (!scaleAudioCtx) {
+    scaleAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    // iOS Safari unlock: play a silent buffer synchronously within the user gesture
+    const silent = scaleAudioCtx.createBuffer(1, 1, scaleAudioCtx.sampleRate);
+    const src = scaleAudioCtx.createBufferSource();
+    src.buffer = silent;
+    src.connect(scaleAudioCtx.destination);
+    src.start(0);
+  }
+  if (scaleAudioCtx.state === 'suspended') scaleAudioCtx.resume();
 }
 
 function buildNotePool() {
@@ -40,28 +48,23 @@ function generatePattern() {
 }
 
 function pluck(ctx, freq, startTime, beatDur) {
-  const sr = ctx.sampleRate;
-  const period = Math.max(2, Math.round(sr / freq));
-  const bufLen = Math.ceil(sr * beatDur * 2.5);
-  const buf = ctx.createBuffer(1, bufLen, sr);
-  const d = buf.getChannelData(0);
-  for (let i = 0; i < period; i++) d[i] = Math.random() * 2 - 1;
-  for (let i = period; i < bufLen; i++) d[i] = 0.499 * (d[i - period] + d[i - period + 1]);
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
+  const osc = ctx.createOscillator();
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.8, startTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + beatDur * 2.5);
-  src.connect(gain);
+  osc.type = 'triangle';
+  osc.frequency.value = freq;
+  osc.connect(gain);
   gain.connect(ctx.destination);
-  src.start(startTime);
-  src.stop(startTime + beatDur * 2.5 + 0.05);
+  gain.gain.setValueAtTime(0, startTime);
+  gain.gain.linearRampToValueAtTime(0.55, startTime + 0.008);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + Math.min(beatDur * 1.8, 2.5));
+  osc.start(startTime);
+  osc.stop(startTime + Math.min(beatDur * 1.8, 2.5) + 0.05);
 }
 
-async function playPattern(pattern, onNote, onEnd) {
-  await ensureCtx();
+function playPattern(pattern, onNote, onEnd) {
+  ensureCtx();
   const beatDur = 60 / scaleBpm;
-  const t0 = scaleAudioCtx.currentTime + 0.15;
+  const t0 = scaleAudioCtx.currentTime + 0.2;
   pattern.forEach((note, i) => {
     const freq = noteToFreq(note.name);
     if (freq) pluck(scaleAudioCtx, freq, t0 + i * beatDur, beatDur);
