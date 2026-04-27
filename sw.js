@@ -1,4 +1,4 @@
-const CACHE = "guitar-tuner-v32";
+const CACHE = "guitar-tuner-v33";
 const FILES = [
   "./accordatore.html",
   "./manifest.json",
@@ -10,6 +10,7 @@ const FILES = [
   "./js/chord.js",
   "./js/pipe.js",
   "./js/wakelock.js",
+  "./js/scale.js",
 ];
 
 self.addEventListener("install", e => {

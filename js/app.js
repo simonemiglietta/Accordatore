@@ -3,6 +3,7 @@ import './looper.js';
 import './metronome.js';
 import './chord.js';
 import './pipe.js';
+import './scale.js';
 
 // Slider fill: keeps the selected portion green on webkit
 function updateSliderFill(input) {
