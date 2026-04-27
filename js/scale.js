@@ -13,12 +13,14 @@ let scaleBpm = 80;
 let patternLen = 6;
 let currentPattern = null;
 let isPlaying = false;
+let loopActive = false;
+let loopTimer = null;
+let playGen = 0;
 let scaleAudioCtx = null;
 
 function ensureCtx() {
   if (!scaleAudioCtx) {
     scaleAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    // iOS Safari unlock: play a silent buffer synchronously within the user gesture
     const silent = scaleAudioCtx.createBuffer(1, 1, scaleAudioCtx.sampleRate);
     const src = scaleAudioCtx.createBufferSource();
     src.buffer = silent;
@@ -80,6 +82,7 @@ const playBtn    = document.getElementById('scale-play-btn');
 const againBtn   = document.getElementById('scale-again-btn');
 const revealBtn  = document.getElementById('scale-reveal-btn');
 const newBtn     = document.getElementById('scale-new-btn');
+const loopBtn    = document.getElementById('scale-loop-btn');
 const dotsEl     = document.getElementById('scale-pattern-dots');
 const notesEl    = document.getElementById('scale-pattern-notes');
 const actionRow  = document.getElementById('scale-action-row');
@@ -108,23 +111,53 @@ function renderNotes(pattern) {
   notesEl.style.display = 'flex';
 }
 
+function resetPlayUI() {
+  isPlaying = false;
+  loopActive = false;
+  clearTimeout(loopTimer);
+  loopTimer = null;
+  playBtn.textContent = '▶ Play Pattern';
+  playBtn.disabled = false;
+  if (currentPattern) {
+    renderDots(currentPattern);
+    actionRow.style.display = 'flex';
+  }
+}
+
 function startPlay(pattern) {
   if (isPlaying) return;
   isPlaying = true;
+  const gen = ++playGen;
   patCard.style.display = 'block';
   actionRow.style.display = 'none';
   notesEl.style.display = 'none';
   renderDots(pattern);
-  playBtn.disabled = true;
+
+  if (loopActive) {
+    playBtn.textContent = '■ Stop';
+    playBtn.disabled = false;
+  } else {
+    playBtn.textContent = '▶ Play Pattern';
+    playBtn.disabled = true;
+  }
 
   playPattern(
     pattern,
-    i => renderDots(pattern, i),
+    i => { if (playGen === gen) renderDots(pattern, i); },
     () => {
+      if (playGen !== gen) return;
       isPlaying = false;
       renderDots(pattern);
-      actionRow.style.display = 'flex';
-      playBtn.disabled = false;
+      if (loopActive) {
+        // 1-beat pause between repetitions
+        loopTimer = setTimeout(() => {
+          if (loopActive) startPlay(pattern);
+        }, 60000 / scaleBpm);
+      } else {
+        playBtn.textContent = '▶ Play Pattern';
+        playBtn.disabled = false;
+        actionRow.style.display = 'flex';
+      }
     }
   );
 }
@@ -135,6 +168,11 @@ function updateLenDisplay() {
 
 // ── Events ────────────────────────────────────────
 playBtn.addEventListener('click', () => {
+  if (loopActive || isPlaying) {
+    playGen++;
+    resetPlayUI();
+    return;
+  }
   currentPattern = generatePattern();
   startPlay(currentPattern);
 });
@@ -145,6 +183,12 @@ againBtn.addEventListener('click', () => {
 
 revealBtn.addEventListener('click', () => {
   if (currentPattern) renderNotes(currentPattern);
+});
+
+loopBtn.addEventListener('click', () => {
+  if (!currentPattern || isPlaying) return;
+  loopActive = true;
+  startPlay(currentPattern);
 });
 
 newBtn.addEventListener('click', () => {
