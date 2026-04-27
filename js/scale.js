@@ -135,16 +135,28 @@ function generatePattern() {
   return result;
 }
 
-// Karplus-Strong — beatMult allunga il decay, amplitude regola l'attacco
-function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
+// KS helper — costruisce il buffer con eccitazione personalizzabile
+function ksBuffer(ctx, freq, beatMult, fillFn) {
   const sr = ctx.sampleRate;
   const period = Math.max(2, Math.round(sr / freq));
   const decay = Math.min(60 / scaleBpm * 2 * beatMult, 3.5);
   const bufLen = Math.ceil(sr * decay);
   const buf = ctx.createBuffer(1, bufLen, sr);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < period; i++) d[i] = Math.random() * 2 - 1;
+  fillFn(d, period);
   for (let i = period; i < bufLen; i++) d[i] = 0.499 * (d[i - period] + d[i - period + 1]);
+  return { buf, decay };
+}
+
+// Pluck normale: triangolo asimmetrico + rumore → pick brightness
+function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
+  const { buf, decay } = ksBuffer(ctx, freq, beatMult, (d, period) => {
+    for (let i = 0; i < period; i++) {
+      const p = i / period;
+      const tri = p < 0.2 ? p / 0.2 : -(p - 0.2) / 0.8; // asimmetrico: plettro vicino al ponte
+      d[i] = tri * 0.6 + (Math.random() * 2 - 1) * 0.4;
+    }
+  });
   const t = ctx.currentTime + 0.005;
   const src = ctx.createBufferSource();
   src.buffer = buf;
@@ -157,28 +169,79 @@ function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
   src.stop(t + decay + 0.05);
 }
 
-// Bending: oscillatore con ramp di frequenza +2 semitoni
+// Hammer-on: eccitazione sinusoidale liscia, attacco lento (nessun transiente di plettro)
+function pluckHO(ctx, freq, beatMult = 1) {
+  const { buf, decay } = ksBuffer(ctx, freq, beatMult, (d, period) => {
+    for (let i = 0; i < period; i++) d[i] = Math.sin(Math.PI * i / period);
+  });
+  const t = ctx.currentTime + 0.005;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.42, t + 0.022); // dito che preme senza plettro
+  gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
+  src.connect(gain);
+  gain.connect(ctx.destination);
+  src.start(t);
+  src.stop(t + decay + 0.05);
+}
+
+// Pull-off: semiseno + spike iniziale (snap del dito che tira la corda lateralmente)
+function pluckPO(ctx, freq, beatMult = 1) {
+  const { buf, decay } = ksBuffer(ctx, freq, beatMult, (d, period) => {
+    for (let i = 0; i < period; i++) {
+      const p = i / period;
+      d[i] = Math.sin(Math.PI * p) * 0.85 + (Math.random() * 2 - 1) * 0.15;
+    }
+  });
+  const t = ctx.currentTime + 0.005;
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.65, t);          // spike iniziale (snap)
+  gain.gain.exponentialRampToValueAtTime(0.38, t + 0.01);  // settle rapido
+  gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
+  src.connect(gain);
+  gain.connect(ctx.destination);
+  src.start(t);
+  src.stop(t + decay + 0.05);
+}
+
+// Bend: oscillatore con ramp di freq + sweep del filtro (più luminoso all'inizio, si scurisce)
 function playBend(ctx, freq, beatMult = 1) {
   const t = ctx.currentTime + 0.005;
   const decay = Math.min(60 / scaleBpm * 2 * beatMult, 3.5);
   const targetFreq = freq * Math.pow(2, 2 / 12);
+  const bendEnd = t + Math.min(decay * 0.45, 0.65);
 
   const osc = ctx.createOscillator();
   osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(freq, t);
-  osc.frequency.exponentialRampToValueAtTime(targetFreq, t + Math.min(decay * 0.45, 0.7));
+  osc.frequency.exponentialRampToValueAtTime(targetFreq, bendEnd);
 
-  const filter = ctx.createBiquadFilter();
-  filter.type = 'lowpass';
-  filter.frequency.value = freq * 4;
-  filter.Q.value = 2;
+  // Lowpass sweep: luminoso all'attacco, si scurisce durante il sustain
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(freq * 8, t);
+  lp.frequency.exponentialRampToValueAtTime(freq * 2.5, t + decay * 0.5);
+  lp.Q.value = 0.8;
+
+  // Peaking per simulare corpo della chitarra
+  const body = ctx.createBiquadFilter();
+  body.type = 'peaking';
+  body.frequency.value = Math.max(200, freq * 1.5);
+  body.Q.value = 1.5;
+  body.gain.value = 7;
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.35, t);
+  gain.gain.setValueAtTime(0, t);
+  gain.gain.linearRampToValueAtTime(0.38, t + 0.009);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
 
-  osc.connect(filter);
-  filter.connect(gain);
+  osc.connect(lp);
+  lp.connect(body);
+  body.connect(gain);
   gain.connect(ctx.destination);
   osc.start(t);
   osc.stop(t + decay + 0.05);
@@ -216,12 +279,11 @@ function playPattern(pattern, onNote, onEnd) {
       } else {
         const freq = noteToFreq(note.name);
         if (freq) {
-          if (note.technique === 'bend') {
-            playBend(scaleAudioCtx, freq, note.duration || 1);
-          } else {
-            const amp = note.technique === 'ho' ? 0.3 : note.technique === 'po' ? 0.4 : 0.8;
-            pluck(scaleAudioCtx, freq, note.duration || 1, amp);
-          }
+          const bm = note.duration || 1;
+          if      (note.technique === 'bend') playBend(scaleAudioCtx, freq, bm);
+          else if (note.technique === 'ho')   pluckHO(scaleAudioCtx, freq, bm);
+          else if (note.technique === 'po')   pluckPO(scaleAudioCtx, freq, bm);
+          else                                pluck(scaleAudioCtx, freq, bm);
         }
       }
       onNote(i);
