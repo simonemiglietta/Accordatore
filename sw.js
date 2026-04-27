@@ -1,4 +1,4 @@
-const CACHE = "guitar-tuner-v33";
+const CACHE = "guitar-tuner-v34";
 const FILES = [
   "./accordatore.html",
   "./manifest.json",

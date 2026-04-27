@@ -10,13 +10,14 @@ const SCALES = {
 let scaleRoot = 'A';
 let scaleType = 'pent-min';
 let scaleBpm = 80;
+let patternLen = 6;
 let currentPattern = null;
 let isPlaying = false;
 let scaleAudioCtx = null;
 
-function ensureCtx() {
+async function ensureCtx() {
   if (!scaleAudioCtx) scaleAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
-  if (scaleAudioCtx.state === 'suspended') scaleAudioCtx.resume();
+  if (scaleAudioCtx.state === 'suspended') await scaleAudioCtx.resume();
 }
 
 function buildNotePool() {
@@ -35,14 +36,13 @@ function buildNotePool() {
 
 function generatePattern() {
   const pool = buildNotePool();
-  const len = 4 + Math.floor(Math.random() * 3);
-  return Array.from({ length: len }, () => pool[Math.floor(Math.random() * pool.length)]);
+  return Array.from({ length: patternLen }, () => pool[Math.floor(Math.random() * pool.length)]);
 }
 
 function pluck(ctx, freq, startTime, beatDur) {
   const sr = ctx.sampleRate;
   const period = Math.max(2, Math.round(sr / freq));
-  const bufLen = Math.ceil(sr * beatDur * 2.2);
+  const bufLen = Math.ceil(sr * beatDur * 2.5);
   const buf = ctx.createBuffer(1, bufLen, sr);
   const d = buf.getChannelData(0);
   for (let i = 0; i < period; i++) d[i] = Math.random() * 2 - 1;
@@ -51,38 +51,39 @@ function pluck(ctx, freq, startTime, beatDur) {
   src.buffer = buf;
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.8, startTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, startTime + beatDur * 2.2);
+  gain.gain.exponentialRampToValueAtTime(0.001, startTime + beatDur * 2.5);
   src.connect(gain);
   gain.connect(ctx.destination);
   src.start(startTime);
-  src.stop(startTime + beatDur * 2.2);
+  src.stop(startTime + beatDur * 2.5 + 0.05);
 }
 
-function playPattern(pattern, onNote, onEnd) {
-  ensureCtx();
+async function playPattern(pattern, onNote, onEnd) {
+  await ensureCtx();
   const beatDur = 60 / scaleBpm;
-  const t0 = scaleAudioCtx.currentTime + 0.1;
+  const t0 = scaleAudioCtx.currentTime + 0.15;
   pattern.forEach((note, i) => {
     const freq = noteToFreq(note.name);
     if (freq) pluck(scaleAudioCtx, freq, t0 + i * beatDur, beatDur);
-    const delay = (t0 + i * beatDur - scaleAudioCtx.currentTime) * 1000;
-    setTimeout(() => onNote(i), Math.max(0, delay));
+    const delayMs = (t0 + i * beatDur - scaleAudioCtx.currentTime) * 1000;
+    setTimeout(() => onNote(i), Math.max(0, delayMs));
   });
-  const totalMs = (t0 + pattern.length * (60 / scaleBpm) - scaleAudioCtx.currentTime) * 1000;
-  setTimeout(onEnd, Math.max(0, totalMs));
+  const endMs = (t0 + pattern.length * beatDur - scaleAudioCtx.currentTime) * 1000;
+  setTimeout(onEnd, Math.max(0, endMs));
 }
 
 // ── DOM ───────────────────────────────────────────
-const playBtn   = document.getElementById('scale-play-btn');
-const againBtn  = document.getElementById('scale-again-btn');
-const revealBtn = document.getElementById('scale-reveal-btn');
-const newBtn    = document.getElementById('scale-new-btn');
-const dotsEl    = document.getElementById('scale-pattern-dots');
-const notesEl   = document.getElementById('scale-pattern-notes');
-const actionRow = document.getElementById('scale-action-row');
-const patCard   = document.getElementById('scale-pattern-card');
-const bpmSlider = document.getElementById('scale-bpm');
-const bpmValEl  = document.getElementById('scale-bpm-val');
+const playBtn    = document.getElementById('scale-play-btn');
+const againBtn   = document.getElementById('scale-again-btn');
+const revealBtn  = document.getElementById('scale-reveal-btn');
+const newBtn     = document.getElementById('scale-new-btn');
+const dotsEl     = document.getElementById('scale-pattern-dots');
+const notesEl    = document.getElementById('scale-pattern-notes');
+const actionRow  = document.getElementById('scale-action-row');
+const patCard    = document.getElementById('scale-pattern-card');
+const bpmSlider  = document.getElementById('scale-bpm');
+const bpmValEl   = document.getElementById('scale-bpm-val');
+const lenValEl   = document.getElementById('scale-len-val');
 
 function renderDots(pattern, activeIdx = -1) {
   dotsEl.innerHTML = '';
@@ -125,6 +126,10 @@ function startPlay(pattern) {
   );
 }
 
+function updateLenDisplay() {
+  lenValEl.textContent = patternLen + ' n';
+}
+
 // ── Events ────────────────────────────────────────
 playBtn.addEventListener('click', () => {
   currentPattern = generatePattern();
@@ -151,13 +156,20 @@ bpmSlider.addEventListener('input', e => {
   bpmValEl.textContent = scaleBpm;
 });
 
-document.querySelectorAll('.scale-step-btn').forEach(btn => {
+document.querySelectorAll('.scale-bpm-step').forEach(btn => {
   btn.addEventListener('click', () => {
     scaleBpm = Math.max(40, Math.min(160, scaleBpm + parseInt(btn.dataset.delta)));
     bpmSlider.value = scaleBpm;
     bpmValEl.textContent = scaleBpm;
     const pct = ((scaleBpm - 40) / 120) * 100;
     bpmSlider.style.setProperty('--fill', pct + '%');
+  });
+});
+
+document.querySelectorAll('.scale-len-step').forEach(btn => {
+  btn.addEventListener('click', () => {
+    patternLen = Math.max(4, Math.min(12, patternLen + parseInt(btn.dataset.delta)));
+    updateLenDisplay();
   });
 });
 
