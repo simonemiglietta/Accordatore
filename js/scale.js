@@ -11,6 +11,7 @@ let scaleRoot = 'A';
 let scaleType = 'pent-min';
 let scaleBpm = 80;
 let patternLen = 6;
+let difficulty = 'easy';
 let currentPattern = null;
 let isPlaying = false;
 let loopActive = false;
@@ -33,15 +34,31 @@ function ensureCtx() {
 function buildNotePool() {
   const rootIdx = NOTE_NAMES.indexOf(scaleRoot);
   const intervals = SCALES[scaleType];
-  const pool = [];
-  for (const oct of [3, 4]) {
+
+  // Build full ascending pool across octaves 2–5
+  const full = [];
+  for (const oct of [2, 3, 4, 5]) {
     for (const interval of intervals) {
       const semitone = rootIdx + interval;
       const noteOct = oct + Math.floor(semitone / 12);
-      pool.push({ name: NOTE_NAMES[semitone % 12] + noteOct, label: NOTE_NAMES[semitone % 12] });
+      if (noteOct >= 2 && noteOct <= 5)
+        full.push({ name: NOTE_NAMES[semitone % 12] + noteOct, label: NOTE_NAMES[semitone % 12] });
     }
   }
-  return pool;
+
+  if (difficulty === 'easy') {
+    // Fixed window: octaves 3–4 (same as before)
+    return full.filter(n => {
+      const oct = parseInt(n.name.slice(-1));
+      return oct === 3 || oct === 4;
+    });
+  }
+
+  // Medium: random window spanning ~2 scale forms (2 × intervals.length notes)
+  const windowSize = intervals.length * 2;
+  const maxStart = Math.max(0, full.length - windowSize);
+  const start = Math.floor(Math.random() * (maxStart + 1));
+  return full.slice(start, start + windowSize);
 }
 
 function generatePattern() {
@@ -243,5 +260,13 @@ document.querySelectorAll('.scale-type-btn').forEach(btn => {
     document.querySelectorAll('.scale-type-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     scaleType = btn.dataset.type;
+  });
+});
+
+document.querySelectorAll('.scale-diff-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.scale-diff-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    difficulty = btn.dataset.diff;
   });
 });
