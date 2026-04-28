@@ -140,7 +140,8 @@ function generatePattern() {
           // hammer-on / pull-off
           technique = semiDist > 0 ? 'ho' : 'po';
           fromLabel = prev.label;
-          duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
+          const longProb = technique === 'po' ? 0.42 : 0.28;
+          duration = (remaining >= 2 && Math.random() < longProb) ? 2 : 1;
         } else if (Math.random() < 0.22) {
           // famiglia dei bend
           bendSemitones = Math.random() < 0.45 ? 1 : 2;
@@ -245,19 +246,22 @@ function pluckPO(ctx, freq, beatMult = 1) {
   const { buf, decay } = ksBuffer(ctx, freq, beatMult, (d, period) => {
     for (let i = 0; i < period; i++) {
       const p = i / period;
-      d[i] = Math.sin(Math.PI * p) * 0.85 + (Math.random() * 2 - 1) * 0.15;
+      // Snap asimmetrico: dito che tira la corda lateralmente → attacco tagliente
+      const snap = p < 0.15 ? p / 0.15 : -(p - 0.15) / 0.85;
+      d[i] = snap * 0.65 + Math.sin(Math.PI * p) * 0.25 + (Math.random() * 2 - 1) * 0.10;
     }
   });
   const t = ctx.currentTime + 0.005;
   const src = ctx.createBufferSource();
   src.buffer = buf;
+  // Filtro largo: preserva il carattere snap del pull-off
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.value = Math.min(freq * 11, 7000);
+  lp.frequency.value = Math.min(freq * 18, 11000);
   lp.Q.value = 0.5;
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.52, t);                          // spike iniziale (snap) — era 0.65
-  gain.gain.exponentialRampToValueAtTime(0.36, t + 0.012);   // settle leggermente più lento
+  gain.gain.setValueAtTime(0.65, t);
+  gain.gain.exponentialRampToValueAtTime(0.42, t + 0.008);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
   src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
   src.start(t);
