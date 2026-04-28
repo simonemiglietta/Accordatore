@@ -13,6 +13,7 @@ let scaleBpm = 80;
 let patternLen = 6;
 let difficulty = 'easy';
 let currentPattern = null;
+let revealedPattern = null;
 let isPlaying = false;
 let loopActive = false;
 let loopTimer = null;
@@ -505,6 +506,7 @@ function renderNotes(pattern) {
     notesEl.appendChild(pill);
   });
   notesEl.style.display = 'flex';
+  revealedPattern = pattern;
 }
 
 function resetPlayUI() {
@@ -520,13 +522,13 @@ function resetPlayUI() {
   }
 }
 
-function startPlay(pattern, resetReveal = false) {
+function startPlay(pattern) {
   if (isPlaying) return;
   isPlaying = true;
   const gen = ++playGen;
   patCard.style.display = 'block';
   actionRow.style.display = 'none';
-  if (resetReveal) notesEl.style.display = 'none';
+  if (pattern !== revealedPattern) notesEl.style.display = 'none';
   renderDots(pattern);
 
   if (loopActive) {
@@ -570,11 +572,11 @@ playBtn.addEventListener('click', () => {
     return;
   }
   currentPattern = generatePattern();
-  startPlay(currentPattern, true);
+  startPlay(currentPattern);
 });
 
 againBtn.addEventListener('click', () => {
-  if (currentPattern) startPlay(currentPattern); // reveal rimane
+  if (currentPattern) startPlay(currentPattern);
 });
 
 revealBtn.addEventListener('click', () => {
@@ -590,7 +592,7 @@ loopBtn.addEventListener('click', () => {
 newBtn.addEventListener('click', () => {
   currentPattern = generatePattern();
   actionRow.style.display = 'none';
-  startPlay(currentPattern, true); // nuovo pattern → nasconde reveal precedente
+  startPlay(currentPattern);
 });
 
 bpmSlider.addEventListener('input', e => {
