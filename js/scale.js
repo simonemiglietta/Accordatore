@@ -18,6 +18,7 @@ let loopActive = false;
 let loopTimer = null;
 let playGen = 0;
 let scaleAudioCtx = null;
+let guitarWave = null; // PeriodicWave warm guitar-like per i bend
 
 function ensureCtx() {
   if (!scaleAudioCtx) {
@@ -27,6 +28,14 @@ function ensureCtx() {
     src.buffer = silent;
     src.connect(scaleAudioCtx.destination);
     src.start(0);
+
+    // Armonici di una chitarra elettrica con pickup al manico (warm, round)
+    const N = 10;
+    const real = new Float32Array(N);
+    const imag = new Float32Array(N);
+    imag[1] = 1.00; imag[2] = 0.50; imag[3] = 0.22;
+    imag[4] = 0.09; imag[5] = 0.04; imag[6] = 0.02; imag[7] = 0.01;
+    guitarWave = scaleAudioCtx.createPeriodicWave(real, imag, { disableNormalization: false });
   }
   if (scaleAudioCtx.state === 'suspended') scaleAudioCtx.resume();
 }
@@ -176,27 +185,35 @@ function ksBuffer(ctx, freq, beatMult, fillFn) {
   const buf = ctx.createBuffer(1, bufLen, sr);
   const d = buf.getChannelData(0);
   fillFn(d, period);
-  for (let i = period; i < bufLen; i++) d[i] = 0.499 * (d[i - period] + d[i - period + 1]);
+  // Loss freq-dipendente: note gravi sostengono più a lungo (come corde reali)
+  const loss = 0.9995 + 0.0004 * Math.min(1, 180 / freq);
+  for (let i = period; i < bufLen; i++) {
+    d[i] = loss * 0.499 * (d[i - period] + d[i - period + 1]);
+  }
   return { buf, decay };
 }
 
-// Pluck normale: triangolo asimmetrico + rumore → pick brightness
+// Pluck: plettro morbido verso il manico — caldo, arrotondato
 function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
   const { buf, decay } = ksBuffer(ctx, freq, beatMult, (d, period) => {
     for (let i = 0; i < period; i++) {
       const p = i / period;
-      const tri = p < 0.2 ? p / 0.2 : -(p - 0.2) / 0.8; // asimmetrico: plettro vicino al ponte
-      d[i] = tri * 0.6 + (Math.random() * 2 - 1) * 0.4;
+      const warm  = Math.sin(Math.PI * p);                        // mezza sinusoide: rotonda
+      const click = p < 0.32 ? p / 0.32 : -(p - 0.32) / 0.68;  // lieve brillantezza del plettro
+      d[i] = warm * 0.65 + click * 0.2 + (Math.random() * 2 - 1) * 0.15;
     }
   });
   const t = ctx.currentTime + 0.005;
   const src = ctx.createBufferSource();
   src.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = Math.min(freq * 13, 8000);
+  lp.Q.value = 0.5;
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(amplitude, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  src.connect(gain);
-  gain.connect(ctx.destination);
+  src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
   src.start(t);
   src.stop(t + decay + 0.05);
 }
@@ -209,12 +226,15 @@ function pluckHO(ctx, freq, beatMult = 1) {
   const t = ctx.currentTime + 0.005;
   const src = ctx.createBufferSource();
   src.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = Math.min(freq * 11, 7000);
+  lp.Q.value = 0.5;
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, t);
-  gain.gain.linearRampToValueAtTime(0.42, t + 0.022); // dito che preme senza plettro
+  gain.gain.linearRampToValueAtTime(0.42, t + 0.022);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  src.connect(gain);
-  gain.connect(ctx.destination);
+  src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
   src.start(t);
   src.stop(t + decay + 0.05);
 }
@@ -230,45 +250,54 @@ function pluckPO(ctx, freq, beatMult = 1) {
   const t = ctx.currentTime + 0.005;
   const src = ctx.createBufferSource();
   src.buffer = buf;
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.value = Math.min(freq * 11, 7000);
+  lp.Q.value = 0.5;
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.65, t);          // spike iniziale (snap)
-  gain.gain.exponentialRampToValueAtTime(0.38, t + 0.01);  // settle rapido
+  gain.gain.setValueAtTime(0.52, t);                          // spike iniziale (snap) — era 0.65
+  gain.gain.exponentialRampToValueAtTime(0.36, t + 0.012);   // settle leggermente più lento
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  src.connect(gain);
-  gain.connect(ctx.destination);
+  src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
   src.start(t);
   src.stop(t + decay + 0.05);
 }
 
 // Shared bend filter chain builder
 function buildBendChain(ctx, osc, freq, t, decay) {
-  // Transiente di pick: rumore breve all'attacco
-  const nBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.018), ctx.sampleRate);
+  // Usa la PeriodicWave warm se disponibile
+  if (guitarWave) osc.setPeriodicWave(guitarWave);
+  else osc.type = 'sawtooth';
+
+  // Transiente di pick: leggero (corda già tesa = meno click)
+  const nBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.016), ctx.sampleRate);
   const nd = nBuf.getChannelData(0);
   for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / nd.length, 4);
   const nSrc = ctx.createBufferSource();
   nSrc.buffer = nBuf;
   const nGain = ctx.createGain();
-  nGain.gain.setValueAtTime(0.22, t);
-  nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.018);
+  nGain.gain.setValueAtTime(0.14, t); // era 0.22: più morbido
+  nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.016);
   nSrc.connect(nGain); nGain.connect(ctx.destination);
   nSrc.start(t);
 
+  // Filtro passa-basso: parte più caldo (freq * 5.5 vs 8), scende a freq * 1.8
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(freq * 8, t);
-  lp.frequency.exponentialRampToValueAtTime(freq * 2.5, t + decay * 0.5);
-  lp.Q.value = 0.8;
+  lp.frequency.setValueAtTime(freq * 5.5, t);
+  lp.frequency.exponentialRampToValueAtTime(freq * 1.8, t + decay * 0.5);
+  lp.Q.value = 0.7;
 
+  // Corpo chitarra: leggermente ridotto
   const body = ctx.createBiquadFilter();
   body.type = 'peaking';
   body.frequency.value = Math.max(200, freq * 1.5);
   body.Q.value = 1.5;
-  body.gain.value = 7;
+  body.gain.value = 5; // era 7
 
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0, t);
-  gain.gain.linearRampToValueAtTime(0.38, t + 0.009);
+  gain.gain.linearRampToValueAtTime(0.44, t + 0.015); // attacco più morbido (era 0.009)
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
 
   osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(ctx.destination);
@@ -285,7 +314,6 @@ function playBend(ctx, freq, beatMult = 1, semitones = 2) {
   const bendEnd = t + bendDur;
 
   const osc = ctx.createOscillator();
-  osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(freq, t);
   osc.frequency.exponentialRampToValueAtTime(targetFreq, bendEnd);
 
@@ -322,7 +350,6 @@ function playBendRelease(ctx, freq, beatMult = 2, semitones = 2) {
   const downEnd = t + beatDur * 1.55;
 
   const osc = ctx.createOscillator();
-  osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(freq, t);
   osc.frequency.exponentialRampToValueAtTime(targetFreq, upEnd);
   osc.frequency.setValueAtTime(targetFreq, holdEnd);
@@ -342,24 +369,24 @@ function playPrebend(ctx, freq, beatMult = 1, semitones = 2) {
   const releaseEnd = t + Math.min(beatDur * 0.6, 0.55);
 
   const osc = ctx.createOscillator();
-  osc.type = 'sawtooth';
+  if (guitarWave) osc.setPeriodicWave(guitarWave); else osc.type = 'sawtooth';
   osc.frequency.setValueAtTime(startFreq, t);
   osc.frequency.exponentialRampToValueAtTime(freq, releaseEnd);
 
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(freq * 4, t); // già in bend: suono più scuro
-  lp.frequency.exponentialRampToValueAtTime(freq * 2, t + decay * 0.5);
-  lp.Q.value = 0.8;
+  lp.frequency.setValueAtTime(freq * 3.5, t); // corda già in bend: scuro
+  lp.frequency.exponentialRampToValueAtTime(freq * 1.7, t + decay * 0.5);
+  lp.Q.value = 0.7;
 
   const body = ctx.createBiquadFilter();
   body.type = 'peaking';
   body.frequency.value = Math.max(200, freq * 1.5);
   body.Q.value = 1.5;
-  body.gain.value = 7;
+  body.gain.value = 5;
 
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.32, t); // niente attacco: corda già vibrante
+  gain.gain.setValueAtTime(0.30, t); // niente attacco: corda già vibrante
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
 
   osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(ctx.destination);
