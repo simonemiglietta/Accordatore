@@ -890,16 +890,23 @@
     border-color: var(--amber); color: var(--amber);
     background: rgba(255,176,0,0.1); text-shadow: none;
   }
-  .scale-dot.bend, .scale-dot.ho, .scale-dot.po {
+  .scale-dot.bend, .scale-dot.bendRelease, .scale-dot.prebend, .scale-dot.ho, .scale-dot.po {
     font-size: 8px; display: flex; align-items: center; justify-content: center;
   }
+  .scale-dot.bendRelease { font-size: 6px; }
   .scale-dot.bend { border-color: #f97; color: #f97; }
   .scale-dot.bend.active { background: #f97; border-color: #f97; color: var(--bg); box-shadow: 0 0 8px #f97; transform: scale(1.3); }
+  .scale-dot.bendRelease { border-color: #f97; color: #f97; }
+  .scale-dot.bendRelease.active { background: #f97; border-color: #f97; color: var(--bg); box-shadow: 0 0 8px #f97; transform: scale(1.3); }
+  .scale-dot.prebend { border-color: #fdb; color: #fdb; }
+  .scale-dot.prebend.active { background: #fdb; border-color: #fdb; color: var(--bg); box-shadow: 0 0 8px #fdb; transform: scale(1.3); }
   .scale-dot.ho { border-color: #8cf; color: #8cf; }
   .scale-dot.ho.active { background: #8cf; border-color: #8cf; color: var(--bg); box-shadow: 0 0 8px #8cf; transform: scale(1.3); }
   .scale-dot.po { border-color: #c8f; color: #c8f; }
   .scale-dot.po.active { background: #c8f; border-color: #c8f; color: var(--bg); box-shadow: 0 0 8px #c8f; transform: scale(1.3); }
   .scale-note-pill.bend { border-color: #f97; color: #f97; background: rgba(255,153,119,0.1); text-shadow: none; }
+  .scale-note-pill.bendRelease { border-color: #f97; color: #f97; background: rgba(255,153,119,0.1); text-shadow: none; }
+  .scale-note-pill.prebend { border-color: #fdb; color: #fdb; background: rgba(255,221,187,0.1); text-shadow: none; }
   .scale-note-pill.ho { border-color: #8cf; color: #8cf; background: rgba(136,204,255,0.1); text-shadow: none; }
   .scale-note-pill.po { border-color: #c8f; color: #c8f; background: rgba(204,136,255,0.1); text-shadow: none; }
 </style>
@@ -911,7 +918,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v49</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v50</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>

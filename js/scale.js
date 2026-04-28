@@ -104,32 +104,62 @@ function generatePattern() {
   }
 
   // Medium / Hard: riempie patternLen beat con note (1 o 2 beat) e muting (15%)
-  const result = [{ ...cur, duration: 1, muted: false, technique: null }];
+  const result = [{ ...cur, duration: 1, muted: false, technique: null, bendSemitones: null }];
   let remaining = patternLen - 1;
+  let lastTechnique = null;
+  let lastBendSemitones = 2;
 
   while (remaining > 0) {
     if (Math.random() < 0.15) {
-      result.push({ ...cur, label: '×', duration: 1, muted: true, technique: null });
+      result.push({ ...cur, label: '×', duration: 1, muted: true, technique: null, bendSemitones: null });
       remaining -= 1;
+      lastTechnique = null;
     } else {
       const w = pool.map(n => (STABILITY[n.interval] ?? 1) * spreadWeight(Math.abs(n.midi - cur.midi)));
       const prev = cur;
       cur = weightedPick(pool, w);
-      const duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
 
+      let duration = 1;
       let technique = null;
       let fromLabel = null;
+      let bendSemitones = null;
+
       if (difficulty === 'hard') {
         const semiDist = cur.midi - prev.midi;
         if (Math.random() < 0.25 && Math.abs(semiDist) >= 1 && Math.abs(semiDist) <= 3) {
+          // hammer-on / pull-off
           technique = semiDist > 0 ? 'ho' : 'po';
           fromLabel = prev.label;
-        } else if (duration === 1 && Math.random() < 0.2) {
-          technique = 'bend';
+          duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
+        } else if (Math.random() < 0.22) {
+          // famiglia dei bend
+          bendSemitones = Math.random() < 0.45 ? 1 : 2;
+
+          if (lastTechnique === 'bend' && remaining >= 1 && Math.random() < 0.55) {
+            // Gesto connesso: bend precedente → ora rilascio (prebend-release)
+            technique = 'prebend';
+            bendSemitones = lastBendSemitones;
+            duration = 1;
+          } else if (remaining >= 2 && Math.random() < 0.38) {
+            // Bend + release in un unico gesto a 2 beat
+            technique = 'bendRelease';
+            duration = 2;
+          } else {
+            // Bend ascendente semplice (1 o 2 beat)
+            technique = 'bend';
+            duration = (remaining >= 2 && Math.random() < 0.32) ? 2 : 1;
+          }
+
+          lastBendSemitones = bendSemitones;
+        } else {
+          duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
         }
+      } else {
+        duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
       }
 
-      result.push({ ...cur, duration, muted: false, technique, fromLabel });
+      lastTechnique = technique;
+      result.push({ ...cur, duration, muted: false, technique, fromLabel, bendSemitones });
       remaining -= duration;
     }
   }
@@ -210,26 +240,26 @@ function pluckPO(ctx, freq, beatMult = 1) {
   src.stop(t + decay + 0.05);
 }
 
-// Bend: oscillatore con ramp di freq + sweep del filtro (più luminoso all'inizio, si scurisce)
-function playBend(ctx, freq, beatMult = 1) {
-  const t = ctx.currentTime + 0.005;
-  const decay = Math.min(60 / scaleBpm * 2 * beatMult, 3.5);
-  const targetFreq = freq * Math.pow(2, 2 / 12);
-  const bendEnd = t + Math.min(decay * 0.45, 0.65);
+// Shared bend filter chain builder
+function buildBendChain(ctx, osc, freq, t, decay) {
+  // Transiente di pick: rumore breve all'attacco
+  const nBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.018), ctx.sampleRate);
+  const nd = nBuf.getChannelData(0);
+  for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / nd.length, 4);
+  const nSrc = ctx.createBufferSource();
+  nSrc.buffer = nBuf;
+  const nGain = ctx.createGain();
+  nGain.gain.setValueAtTime(0.22, t);
+  nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.018);
+  nSrc.connect(nGain); nGain.connect(ctx.destination);
+  nSrc.start(t);
 
-  const osc = ctx.createOscillator();
-  osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(freq, t);
-  osc.frequency.exponentialRampToValueAtTime(targetFreq, bendEnd);
-
-  // Lowpass sweep: luminoso all'attacco, si scurisce durante il sustain
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
   lp.frequency.setValueAtTime(freq * 8, t);
   lp.frequency.exponentialRampToValueAtTime(freq * 2.5, t + decay * 0.5);
   lp.Q.value = 0.8;
 
-  // Peaking per simulare corpo della chitarra
   const body = ctx.createBiquadFilter();
   body.type = 'peaking';
   body.frequency.value = Math.max(200, freq * 1.5);
@@ -241,10 +271,98 @@ function playBend(ctx, freq, beatMult = 1) {
   gain.gain.linearRampToValueAtTime(0.38, t + 0.009);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
 
-  osc.connect(lp);
-  lp.connect(body);
-  body.connect(gain);
-  gain.connect(ctx.destination);
+  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(ctx.destination);
+  return gain;
+}
+
+// Bend ascendente: freq → freq+semitones. Vibrato automatico sui beat lunghi.
+function playBend(ctx, freq, beatMult = 1, semitones = 2) {
+  const t = ctx.currentTime + 0.005;
+  const beatDur = 60 / scaleBpm;
+  const decay = Math.min(beatDur * 2 * beatMult, 3.5);
+  const targetFreq = freq * Math.pow(2, semitones / 12);
+  const bendDur = beatMult >= 2 ? beatDur * 0.75 : Math.min(decay * 0.5, 0.5);
+  const bendEnd = t + bendDur;
+
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(freq, t);
+  osc.frequency.exponentialRampToValueAtTime(targetFreq, bendEnd);
+
+  // Vibrato dopo il bend per note lunghe
+  if (beatMult >= 2 && decay > 1.0) {
+    const vStart = bendEnd + 0.12;
+    const vEnd = t + decay * 0.88;
+    const vLen = vEnd - vStart;
+    if (vLen > 0.25) {
+      const vHz = 5.5, vDepth = 0.004;
+      const N = Math.max(48, Math.round(vLen * vHz * 8));
+      const curve = new Float32Array(N);
+      for (let i = 0; i < N; i++) {
+        const env = Math.min(1, i / (N * 0.28));
+        curve[i] = targetFreq * (1 + vDepth * env * Math.sin(2 * Math.PI * i * vHz / (N / vLen)));
+      }
+      osc.frequency.setValueCurveAtTime(curve, vStart, vLen);
+    }
+  }
+
+  buildBendChain(ctx, osc, freq, t, decay);
+  osc.start(t);
+  osc.stop(t + decay + 0.05);
+}
+
+// Bend-release: sale verso targetFreq nel primo beat, poi ridiscende alla nota base
+function playBendRelease(ctx, freq, beatMult = 2, semitones = 2) {
+  const t = ctx.currentTime + 0.005;
+  const beatDur = 60 / scaleBpm;
+  const decay = Math.min(beatDur * 2 * beatMult, 3.5);
+  const targetFreq = freq * Math.pow(2, semitones / 12);
+  const upEnd   = t + beatDur * 0.72;
+  const holdEnd = upEnd + 0.06;
+  const downEnd = t + beatDur * 1.55;
+
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(freq, t);
+  osc.frequency.exponentialRampToValueAtTime(targetFreq, upEnd);
+  osc.frequency.setValueAtTime(targetFreq, holdEnd);
+  osc.frequency.exponentialRampToValueAtTime(freq, downEnd);
+
+  buildBendChain(ctx, osc, freq, t, decay);
+  osc.start(t);
+  osc.stop(t + decay + 0.05);
+}
+
+// Prebend-release: corda già in bend, rilascia verso il basso. Nessun transiente di pick.
+function playPrebend(ctx, freq, beatMult = 1, semitones = 2) {
+  const t = ctx.currentTime + 0.005;
+  const beatDur = 60 / scaleBpm;
+  const decay = Math.min(beatDur * 2 * beatMult, 3.5);
+  const startFreq = freq * Math.pow(2, semitones / 12);
+  const releaseEnd = t + Math.min(beatDur * 0.6, 0.55);
+
+  const osc = ctx.createOscillator();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(startFreq, t);
+  osc.frequency.exponentialRampToValueAtTime(freq, releaseEnd);
+
+  const lp = ctx.createBiquadFilter();
+  lp.type = 'lowpass';
+  lp.frequency.setValueAtTime(freq * 4, t); // già in bend: suono più scuro
+  lp.frequency.exponentialRampToValueAtTime(freq * 2, t + decay * 0.5);
+  lp.Q.value = 0.8;
+
+  const body = ctx.createBiquadFilter();
+  body.type = 'peaking';
+  body.frequency.value = Math.max(200, freq * 1.5);
+  body.Q.value = 1.5;
+  body.gain.value = 7;
+
+  const gain = ctx.createGain();
+  gain.gain.setValueAtTime(0.32, t); // niente attacco: corda già vibrante
+  gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
+
+  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(ctx.destination);
   osc.start(t);
   osc.stop(t + decay + 0.05);
 }
@@ -282,10 +400,13 @@ function playPattern(pattern, onNote, onEnd) {
         const freq = noteToFreq(note.name);
         if (freq) {
           const bm = note.duration || 1;
-          if      (note.technique === 'bend') playBend(scaleAudioCtx, freq, bm);
-          else if (note.technique === 'ho')   pluckHO(scaleAudioCtx, freq, bm);
-          else if (note.technique === 'po')   pluckPO(scaleAudioCtx, freq, bm);
-          else                                pluck(scaleAudioCtx, freq, bm);
+          const bs = note.bendSemitones ?? 2;
+          if      (note.technique === 'bend')        playBend(scaleAudioCtx, freq, bm, bs);
+          else if (note.technique === 'bendRelease') playBendRelease(scaleAudioCtx, freq, bm, bs);
+          else if (note.technique === 'prebend')     playPrebend(scaleAudioCtx, freq, bm, bs);
+          else if (note.technique === 'ho')          pluckHO(scaleAudioCtx, freq, bm);
+          else if (note.technique === 'po')          pluckPO(scaleAudioCtx, freq, bm);
+          else                                       pluck(scaleAudioCtx, freq, bm);
         }
       }
       onNote(i);
@@ -310,7 +431,7 @@ const bpmSlider  = document.getElementById('scale-bpm');
 const bpmValEl   = document.getElementById('scale-bpm-val');
 const lenValEl   = document.getElementById('scale-len-val');
 
-const TECHNIQUE_SYMBOL = { bend: '↑', ho: 'h', po: 'p' };
+const TECHNIQUE_SYMBOL = { bend: '↑', bendRelease: '↑↓', prebend: '↓', ho: 'h', po: 'p' };
 
 function renderDots(pattern, activeIdx = -1) {
   dotsEl.innerHTML = '';
