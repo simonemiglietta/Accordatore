@@ -459,6 +459,7 @@ const bpmValEl   = document.getElementById('scale-bpm-val');
 const lenValEl   = document.getElementById('scale-len-val');
 
 const TECHNIQUE_SYMBOL = { bend: '↑', bendRelease: '↑↓', prebend: '↓', ho: 'h', po: 'p' };
+const DEGREE_NAMES = ['1','b2','2','b3','3','4','b5','5','b6','6','b7','7'];
 
 function renderDots(pattern, activeIdx = -1) {
   dotsEl.innerHTML = '';
@@ -482,10 +483,25 @@ function renderNotes(pattern) {
     const pill = document.createElement('span');
     const tech = note.technique;
     pill.className = 'scale-note-pill' + (note.muted ? ' muted' : tech ? ' ' + tech : '');
-    const sym = tech ? (TECHNIQUE_SYMBOL[tech] ?? '') : '';
-    const dur = note.duration === 2 ? ' ─' : '';
-    let label = (note.fromLabel ? note.fromLabel + '→' : '') + note.label + dur + sym;
-    pill.textContent = label;
+
+    if (note.muted) {
+      pill.textContent = '×';
+    } else {
+      const sym = tech ? (TECHNIQUE_SYMBOL[tech] ?? '') : '';
+      const dur = note.duration === 2 ? ' ─' : '';
+      const main = document.createElement('span');
+      main.textContent = (note.fromLabel ? note.fromLabel + '→' : '') + note.label + dur + sym;
+      pill.appendChild(main);
+
+      const deg = DEGREE_NAMES[note.interval % 12];
+      if (deg) {
+        const sup = document.createElement('span');
+        sup.className = 'scale-note-degree';
+        sup.textContent = deg;
+        pill.appendChild(sup);
+      }
+    }
+
     notesEl.appendChild(pill);
   });
   notesEl.style.display = 'flex';
@@ -504,13 +520,13 @@ function resetPlayUI() {
   }
 }
 
-function startPlay(pattern) {
+function startPlay(pattern, resetReveal = false) {
   if (isPlaying) return;
   isPlaying = true;
   const gen = ++playGen;
   patCard.style.display = 'block';
   actionRow.style.display = 'none';
-  notesEl.style.display = 'none';
+  if (resetReveal) notesEl.style.display = 'none';
   renderDots(pattern);
 
   if (loopActive) {
@@ -554,11 +570,11 @@ playBtn.addEventListener('click', () => {
     return;
   }
   currentPattern = generatePattern();
-  startPlay(currentPattern);
+  startPlay(currentPattern, true);
 });
 
 againBtn.addEventListener('click', () => {
-  if (currentPattern) startPlay(currentPattern);
+  if (currentPattern) startPlay(currentPattern); // reveal rimane
 });
 
 revealBtn.addEventListener('click', () => {
@@ -573,9 +589,8 @@ loopBtn.addEventListener('click', () => {
 
 newBtn.addEventListener('click', () => {
   currentPattern = generatePattern();
-  notesEl.style.display = 'none';
   actionRow.style.display = 'none';
-  startPlay(currentPattern);
+  startPlay(currentPattern, true); // nuovo pattern → nasconde reveal precedente
 });
 
 bpmSlider.addEventListener('input', e => {

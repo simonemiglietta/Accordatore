@@ -909,6 +909,14 @@
   .scale-note-pill.prebend { border-color: #fdb; color: #fdb; background: rgba(255,221,187,0.1); text-shadow: none; }
   .scale-note-pill.ho { border-color: #8cf; color: #8cf; background: rgba(136,204,255,0.1); text-shadow: none; }
   .scale-note-pill.po { border-color: #c8f; color: #c8f; background: rgba(204,136,255,0.1); text-shadow: none; }
+  .scale-note-degree { font-size: 8px; vertical-align: super; margin-left: 2px; opacity: 0.75; }
+  .scale-legend { margin-top: 14px; font-size: 12px; color: var(--fg-dim, #888); }
+  .scale-legend summary { cursor: pointer; user-select: none; list-style: none; padding: 4px 0; }
+  .scale-legend summary::-webkit-details-marker { display: none; }
+  .scale-legend-grid { display: flex; flex-wrap: wrap; gap: 6px 14px; margin-top: 8px; padding: 10px 12px; background: rgba(255,255,255,0.04); border-radius: 8px; border: 1px solid rgba(255,255,255,0.07); }
+  .scale-legend-row { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--fg-dim, #aaa); }
+  .scale-legend-sym { font-size: 9px; border: 1px solid currentColor; border-radius: 3px; padding: 1px 4px; min-width: 14px; text-align: center; }
+  .scale-legend-note { font-size: 10px; opacity: 0.65; flex-basis: 100%; padding-top: 2px; }
 </style>
 </head>
 <body>
@@ -918,7 +926,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v51</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v52</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -1131,6 +1139,20 @@
     <button class="scale-action-btn" id="scale-loop-btn">↻ Loop</button>
     <button class="scale-action-btn" id="scale-new-btn">New</button>
   </div>
+
+  <details class="scale-legend">
+    <summary>▸ Legenda simboli</summary>
+    <div class="scale-legend-grid">
+      <div class="scale-legend-row"><span class="scale-legend-sym" style="color:#f97">↑</span> bend su</div>
+      <div class="scale-legend-row"><span class="scale-legend-sym" style="color:#f97">↑↓</span> bend + release</div>
+      <div class="scale-legend-row"><span class="scale-legend-sym" style="color:#fdb">↓</span> prebend / release</div>
+      <div class="scale-legend-row"><span class="scale-legend-sym" style="color:#8cf">h</span> hammer-on</div>
+      <div class="scale-legend-row"><span class="scale-legend-sym" style="color:#c8f">p</span> pull-off</div>
+      <div class="scale-legend-row"><span class="scale-legend-sym" style="color:var(--amber,#fb0)">×</span> smorzato</div>
+      <div class="scale-legend-row"><span class="scale-legend-sym">─</span> 2 beat</div>
+      <div class="scale-legend-note">Il numero in apice su ogni nota indica il grado della scala: 1 = tonica · 5 = quinta · b3 = terza minore · b7 = settima minore…</div>
+    </div>
+  </details>
 </div><!-- /tab-scale -->
 
 <script type="module" src="js/app.js"></script>
