@@ -111,7 +111,7 @@ function swapLoopBuffer(newBuf) {
 }
 
 async function ensureLoopCtx() {
-  if (loopAudioCtx && loopStream) return true;
+  if (loopAudioCtx && loopStream && loopStream.getTracks().some(t => t.readyState === 'live')) return true;
   try {
     loopStream = await navigator.mediaDevices.getUserMedia({
       audio: { echoCancellation: false, noiseSuppression: false, autoGainControl: false }
@@ -180,7 +180,8 @@ function wsola(buffer, rate) {
   const sr = buffer.sampleRate, ch = buffer.numberOfChannels;
   const inLen = buffer.length;
   const outLen = Math.round(inLen / rate);
-  const frameSize = Math.round(sr * 0.08);
+  // Larger frames at low rates capture more waveform context, reducing phasiness
+  const frameSize = Math.round(sr * Math.min(0.08 / rate, 0.20));
   const hopOut    = Math.round(sr * 0.02);
   const hopIn     = Math.round(hopOut * rate);
   const outBuf = loopAudioCtx.createBuffer(ch, outLen, sr);
@@ -191,7 +192,8 @@ function wsola(buffer, rate) {
     for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2*Math.PI*i/(frameSize-1)));
     let inPos = 0, outPos = 0;
     while (outPos + frameSize < outLen && inPos + frameSize < inLen) {
-      const searchRadius = Math.round(hopIn * 0.5);
+      // Minimum search radius of 10ms so low-rate stretches have enough candidate positions
+      const searchRadius = Math.max(Math.round(hopIn * 0.5), Math.round(sr * 0.01));
       const searchStart = Math.max(0, inPos - searchRadius);
       const searchEnd   = Math.min(inLen - frameSize, inPos + searchRadius);
       let bestOffset = inPos, bestCorr = -Infinity;
@@ -227,6 +229,11 @@ function startRecording() {
   mediaRecorder.onstop = async () => {
     metroMuteForRec(false);
     clearCountInTimers();
+    // Release mic so the browser indicator disappears and iOS routes audio to speaker
+    if (loopStream) {
+      loopStream.getTracks().forEach(t => t.stop());
+      loopStream = null;
+    }
     loopState = "idle";
     lbtnRec.classList.remove("rec-active");
     lbtnStop.disabled = true;
