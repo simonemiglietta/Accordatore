@@ -175,12 +175,10 @@ function trimAndCrossfade(buffer) {
   return out;
 }
 
-function wsola(buffer, rate) {
-  if (Math.abs(rate - 1.0) < 0.01) return buffer;
+function wsolaCore(buffer, rate) {
   const sr = buffer.sampleRate, ch = buffer.numberOfChannels;
   const inLen = buffer.length;
   const outLen = Math.round(inLen / rate);
-  // Larger frames at low rates capture more waveform context, reducing phasiness
   const frameSize = Math.round(sr * Math.min(0.08 / rate, 0.20));
   const hopOut    = Math.round(sr * 0.02);
   const hopIn     = Math.round(hopOut * rate);
@@ -192,7 +190,6 @@ function wsola(buffer, rate) {
     for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2*Math.PI*i/(frameSize-1)));
     let inPos = 0, outPos = 0;
     while (outPos + frameSize < outLen && inPos + frameSize < inLen) {
-      // Minimum search radius of 10ms so low-rate stretches have enough candidate positions
       const searchRadius = Math.max(Math.round(hopIn * 0.5), Math.round(sr * 0.01));
       const searchStart = Math.max(0, inPos - searchRadius);
       const searchEnd   = Math.min(inLen - frameSize, inPos + searchRadius);
@@ -217,6 +214,17 @@ function wsola(buffer, rate) {
     if (peak > 0.01) { const scale = Math.min(1.0, 0.95 / peak); for (let i = 0; i < outLen; i++) out[i] *= scale; }
   }
   return outBuf;
+}
+
+function wsola(buffer, rate) {
+  if (Math.abs(rate - 1.0) < 0.01) return buffer;
+  // Single WSOLA pass degrades badly below 0.5x; cascade two passes instead:
+  // first stretch to 2x (rate=0.5), then apply the remaining factor (rate*2 ∈ [0.5,1.0])
+  if (rate < 0.5) {
+    const half = wsolaCore(buffer, 0.5);
+    return wsolaCore(half, rate * 2);
+  }
+  return wsolaCore(buffer, rate);
 }
 
 function startRecording() {
