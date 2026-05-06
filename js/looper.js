@@ -179,18 +179,20 @@ function wsolaCore(buffer, rate) {
   const sr = buffer.sampleRate, ch = buffer.numberOfChannels;
   const inLen = buffer.length;
   const outLen = Math.round(inLen / rate);
-  const frameSize = Math.round(sr * Math.min(0.08 / rate, 0.20));
-  const hopOut    = Math.round(sr * 0.02);
+  const frameSize = Math.round(sr * Math.min(0.06 / rate, 0.15));
+  const hopOut    = Math.round(sr * 0.020);
   const hopIn     = Math.round(hopOut * rate);
+  // Cap search at ±6ms: prevents large inPos jumps that cause uneven local stretch rate
+  const searchRadius = Math.round(Math.min(hopIn * 0.5, sr * 0.006));
   const outBuf = loopAudioCtx.createBuffer(ch, outLen, sr);
   for (let c = 0; c < ch; c++) {
     const inp = buffer.getChannelData(c);
     const out = outBuf.getChannelData(c);
+    const norm = new Float32Array(outLen);
     const win = new Float32Array(frameSize);
     for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2*Math.PI*i/(frameSize-1)));
     let inPos = 0, outPos = 0;
     while (outPos + frameSize < outLen && inPos + frameSize < inLen) {
-      const searchRadius = Math.max(Math.round(hopIn * 0.5), Math.round(sr * 0.01));
       const searchStart = Math.max(0, inPos - searchRadius);
       const searchEnd   = Math.min(inLen - frameSize, inPos + searchRadius);
       let bestOffset = inPos, bestCorr = -Infinity;
@@ -204,11 +206,14 @@ function wsolaCore(buffer, rate) {
         }
       }
       for (let k = 0; k < frameSize && outPos + k < outLen && bestOffset + k < inLen; k++) {
-        out[outPos + k] += inp[bestOffset + k] * win[k];
+        out[outPos + k]  += inp[bestOffset + k] * win[k];
+        norm[outPos + k] += win[k];
       }
       inPos  = bestOffset + hopIn;
       outPos += hopOut;
     }
+    // Normalize OLA sum: keeps amplitude constant when frames cluster or spread
+    for (let i = 0; i < outLen; i++) if (norm[i] > 0.001) out[i] /= norm[i];
     let peak = 0;
     for (let i = 0; i < outLen; i++) if (Math.abs(out[i]) > peak) peak = Math.abs(out[i]);
     if (peak > 0.01) { const scale = Math.min(1.0, 0.95 / peak); for (let i = 0; i < outLen; i++) out[i] *= scale; }
