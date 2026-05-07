@@ -191,11 +191,11 @@ function wsolaCore(buffer, rate) {
     const norm = new Float32Array(outLen);
     const win = new Float32Array(frameSize);
     for (let i = 0; i < frameSize; i++) win[i] = 0.5 * (1 - Math.cos(2*Math.PI*i/(frameSize-1)));
-    let inPos = 0, outPos = 0;
-    while (outPos + frameSize < outLen && inPos + frameSize < inLen) {
-      const searchStart = Math.max(0, inPos - searchRadius);
-      const searchEnd   = Math.min(inLen - frameSize, inPos + searchRadius);
-      let bestOffset = inPos, bestCorr = -Infinity;
+    let idealInPos = 0, outPos = 0;
+    while (outPos + frameSize < outLen && idealInPos + frameSize < inLen) {
+      const searchStart = Math.max(0, idealInPos - searchRadius);
+      const searchEnd   = Math.min(inLen - frameSize, idealInPos + searchRadius);
+      let bestOffset = idealInPos, bestCorr = -Infinity;
       const refStart = Math.max(0, outPos - hopOut);
       const refLen   = Math.min(frameSize, outPos - refStart);
       if (refLen > 16) {
@@ -209,7 +209,7 @@ function wsolaCore(buffer, rate) {
         out[outPos + k]  += inp[bestOffset + k] * win[k];
         norm[outPos + k] += win[k];
       }
-      inPos  = bestOffset + hopIn;
+      idealInPos += hopIn; // advance exact hop — guarantees constant stretch ratio
       outPos += hopOut;
     }
     // Normalize OLA sum: keeps amplitude constant when frames cluster or spread
