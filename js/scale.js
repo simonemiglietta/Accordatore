@@ -58,7 +58,12 @@ function lickToPattern(lick) {
 let scaleRoot = 'A';
 let scaleType = 'pent-min';
 let scaleBpm = 80;
-let patternLen = 6;
+let lenPreset = 'medium';
+const LEN_RANGES = { short: [4, 6], medium: [7, 10], long: [11, 16] };
+function getPatternLen() {
+  const [mn, mx] = LEN_RANGES[lenPreset];
+  return mn + Math.floor(Math.random() * (mx - mn + 1));
+}
 let difficulty = 'easy';
 let selectedLickIdx = 0;
 let currentPattern = null;
@@ -185,6 +190,7 @@ function generatePattern() {
 
   if (difficulty === 'easy') {
     const result = [{ ...cur, duration: 1, muted: false, technique: null }];
+    const patternLen = getPatternLen();
     for (let i = 1; i < patternLen; i++) {
       const w = pool.map(n => (STABILITY[n.interval] ?? 1) * spreadWeight(Math.abs(n.midi - cur.midi)));
       cur = weightedPick(pool, w);
@@ -193,7 +199,8 @@ function generatePattern() {
     return result;
   }
 
-  // Medium / Hard: riempie patternLen beat con note (0.5/1/2 beat) e muting (15%)
+  // Medium / Hard: riempie i beat con note (0.5/1/2 beat) e muting (15%)
+  const patternLen = getPatternLen();
   const result = [{ ...cur, duration: 1, muted: false, technique: null, bendSemitones: null }];
   let remaining = patternLen - 1;
   let lastTechnique = null;
@@ -563,7 +570,6 @@ const actionRow     = document.getElementById('scale-action-row');
 const patCard       = document.getElementById('scale-pattern-card');
 const bpmSlider     = document.getElementById('scale-bpm');
 const bpmValEl      = document.getElementById('scale-bpm-val');
-const lenValEl      = document.getElementById('scale-len-val');
 const lickPickerEl  = document.getElementById('scale-lick-picker');
 const lenRowEl      = document.getElementById('scale-len-row');
 
@@ -684,10 +690,6 @@ function startPlay(pattern) {
   );
 }
 
-function updateLenDisplay() {
-  lenValEl.textContent = patternLen + ' n';
-}
-
 // ── Events ────────────────────────────────────────
 playBtn.addEventListener('click', () => {
   if (loopActive || isPlaying) {
@@ -743,10 +745,11 @@ document.querySelectorAll('.scale-bpm-step').forEach(btn => {
   });
 });
 
-document.querySelectorAll('.scale-len-step').forEach(btn => {
+document.querySelectorAll('.scale-len-btn').forEach(btn => {
   btn.addEventListener('click', () => {
-    patternLen = Math.max(4, Math.min(16, patternLen + parseInt(btn.dataset.delta)));
-    updateLenDisplay();
+    document.querySelectorAll('.scale-len-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    lenPreset = btn.dataset.len;
   });
 });
 

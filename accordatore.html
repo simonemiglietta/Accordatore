@@ -788,14 +788,14 @@
   .scale-type-row {
     display: flex; gap: 5px; margin-bottom: 14px;
   }
-  .scale-type-btn, .scale-diff-btn {
+  .scale-type-btn, .scale-diff-btn, .scale-len-btn {
     flex: 1; padding: 6px 4px; font-size: 9px; font-family: var(--font);
     letter-spacing: 0.5px; text-transform: uppercase; border-radius: var(--radius);
     border: 1px solid var(--border); background: transparent;
     color: var(--text-muted); cursor: pointer; transition: all 0.13s;
     -webkit-tap-highlight-color: transparent; text-align: center;
   }
-  .scale-type-btn.active, .scale-diff-btn.active {
+  .scale-type-btn.active, .scale-diff-btn.active, .scale-len-btn.active {
     border-color: var(--green); color: var(--text);
     background: var(--green-glow); text-shadow: 0 0 5px var(--green);
   }
@@ -932,7 +932,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v69</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v70</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -1123,14 +1123,10 @@
       <button class="scale-step-btn scale-bpm-step" data-delta="5">+</button>
       <span class="scale-bpm-val" id="scale-bpm-val">80</span>
     </div>
-    <div id="scale-len-row" class="scale-bpm-row" style="margin-top:8px">
-      <span class="scale-bpm-lbl">Notes</span>
-      <button class="scale-step-btn scale-len-step" data-delta="-1">−</button>
-      <div style="flex:1;display:flex;align-items:center;justify-content:center;">
-        <span class="scale-len-val" id="scale-len-val">6 n</span>
-      </div>
-      <button class="scale-step-btn scale-len-step" data-delta="1">+</button>
-      <span style="min-width:36px"></span>
+    <div id="scale-len-row" class="scale-type-row" style="margin-top:8px;margin-bottom:0">
+      <button class="scale-len-btn" data-len="short">Short</button>
+      <button class="scale-len-btn active" data-len="medium">Medium</button>
+      <button class="scale-len-btn" data-len="long">Long</button>
     </div>
   </div>
 
