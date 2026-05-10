@@ -25,6 +25,14 @@ const LICKS = [
   { name: "Double Pentatonic",   notes: [{s:0,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:7,d:0.5},{s:10,d:0.5},{s:12,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
   { name: "Root Bounce",         notes: [{s:0,d:0.5},{s:3,d:0.5},{s:0,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
   { name: "Vibrato High",        notes: [{s:12,d:1.5,t:'bend',bs:1},{s:10,d:0.5},{s:12,d:1.5,t:'bend',bs:2},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:0,d:1}] },
+  { name: "Blue Note",           notes: [{s:0,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:6,d:0.5},{s:7,d:1},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Descending Sequence", notes: [{s:12,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Minor-Major Bend",    notes: [{s:0,d:0.5},{s:3,d:1.5,t:'bend',bs:1},{s:5,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:3,d:1,t:'bend',bs:1},{s:0,d:1}] },
+  { name: "Mixolydian Run",      notes: [{s:10,d:0.5},{s:9,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:4,d:0.5},{s:2,d:0.5},{s:0,d:1}] },
+  { name: "Pentatonic Skip",     notes: [{s:0,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:12,d:1}] },
+  { name: "High Scream",         notes: [{s:15,d:0.5},{s:14,d:0.5},{s:12,d:0.5},{s:10,d:0.5},{s:12,d:1.5,t:'bend',bs:2},{s:10,d:0.5},{s:7,d:0.5},{s:0,d:1}] },
+  { name: "Gary Moore",          notes: [{s:12,d:2,t:'bend',bs:2},{s:10,d:1},{s:7,d:2,t:'bendRelease',bs:2},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Chromatic Approach",  notes: [{s:0,d:0.5},{s:3,d:0.5},{s:4,d:0.5},{s:5,d:1},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
 ];
 
 function lickToPattern(lick) {
