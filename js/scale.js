@@ -7,11 +7,52 @@ const SCALES = {
   'minor':    [0, 2, 3, 5, 7, 8, 10],
 };
 
+// ── Lick library ─────────────────────────────────
+// s = semitones from root · d = beats · t = technique · bs = bendSemitones
+const LICKS = [
+  { name: "Pentatonic Descent",    notes: [{s:12},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Blues Ascent",          notes: [{s:0},{s:3},{s:5},{s:7},{s:10},{s:12,d:2}] },
+  { name: "BB King Bend",          notes: [{s:10},{s:7,d:2,t:'bend',bs:2},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Slow Blues",            notes: [{s:12,d:2,t:'bend',bs:2},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Hendrix Curl",          notes: [{s:7,d:2,t:'bend',bs:1},{s:5},{s:3},{s:0},{s:3},{s:0,d:2}] },
+  { name: "Bend & Release",        notes: [{s:7,d:2,t:'bendRelease',bs:2},{s:5},{s:3},{s:5},{s:0,d:2}] },
+  { name: "Clapton Run",           notes: [{s:12},{s:10},{s:12},{s:10},{s:7},{s:10},{s:7,d:2}] },
+  { name: "Hammer-on Run",         notes: [{s:0},{s:3,t:'ho'},{s:5},{s:7},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Pull-off Lick",         notes: [{s:12},{s:10},{s:7,t:'po'},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Classic Resolution",    notes: [{s:5},{s:3},{s:5},{s:3,d:2},{s:0,d:2}] },
+  { name: "Albert King",           notes: [{s:10},{s:12,d:2,t:'bend',bs:2},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Page Style",            notes: [{s:0},{s:3},{s:5},{s:7},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Double Pentatonic",     notes: [{s:0},{s:3},{s:5},{s:7},{s:10},{s:12},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Root Bounce",           notes: [{s:0},{s:3},{s:0},{s:3},{s:5},{s:7},{s:5},{s:3},{s:0,d:2}] },
+  { name: "Vibrato High",          notes: [{s:12,d:2,t:'bend',bs:1},{s:10},{s:12,d:2,t:'bend',bs:2},{s:10},{s:7},{s:5},{s:0,d:2}] },
+];
+
+function lickToPattern(lick) {
+  const rootIdx = NOTE_NAMES.indexOf(scaleRoot);
+  let prevLabel = null;
+  return lick.notes.map(n => {
+    const total = rootIdx + (n.s || 0);
+    const octShift = Math.floor(total / 12);
+    const noteIdx = ((total % 12) + 12) % 12;
+    const noteOct = 3 + octShift;
+    const label = NOTE_NAMES[noteIdx];
+    const fromLabel = (n.t === 'ho' || n.t === 'po') ? prevLabel : null;
+    prevLabel = label;
+    return {
+      name: label + noteOct, label, interval: ((n.s || 0) % 12 + 12) % 12,
+      midi: (noteOct + 1) * 12 + noteIdx,
+      duration: n.d || 1, muted: false,
+      technique: n.t || null, fromLabel, bendSemitones: n.bs || null,
+    };
+  });
+}
+
 let scaleRoot = 'A';
 let scaleType = 'pent-min';
 let scaleBpm = 80;
 let patternLen = 6;
 let difficulty = 'easy';
+let selectedLickIdx = 0;
 let currentPattern = null;
 let revealedPattern = null;
 let isPlaying = false;
@@ -450,18 +491,35 @@ function playPattern(pattern, onNote, onEnd) {
 }
 
 // ── DOM ───────────────────────────────────────────
-const playBtn    = document.getElementById('scale-play-btn');
-const againBtn   = document.getElementById('scale-again-btn');
-const revealBtn  = document.getElementById('scale-reveal-btn');
-const newBtn     = document.getElementById('scale-new-btn');
-const loopBtn    = document.getElementById('scale-loop-btn');
-const dotsEl     = document.getElementById('scale-pattern-dots');
-const notesEl    = document.getElementById('scale-pattern-notes');
-const actionRow  = document.getElementById('scale-action-row');
-const patCard    = document.getElementById('scale-pattern-card');
-const bpmSlider  = document.getElementById('scale-bpm');
-const bpmValEl   = document.getElementById('scale-bpm-val');
-const lenValEl   = document.getElementById('scale-len-val');
+const playBtn       = document.getElementById('scale-play-btn');
+const againBtn      = document.getElementById('scale-again-btn');
+const revealBtn     = document.getElementById('scale-reveal-btn');
+const newBtn        = document.getElementById('scale-new-btn');
+const loopBtn       = document.getElementById('scale-loop-btn');
+const dotsEl        = document.getElementById('scale-pattern-dots');
+const notesEl       = document.getElementById('scale-pattern-notes');
+const actionRow     = document.getElementById('scale-action-row');
+const patCard       = document.getElementById('scale-pattern-card');
+const bpmSlider     = document.getElementById('scale-bpm');
+const bpmValEl      = document.getElementById('scale-bpm-val');
+const lenValEl      = document.getElementById('scale-len-val');
+const lickPickerEl  = document.getElementById('scale-lick-picker');
+const lenRowEl      = document.getElementById('scale-len-row');
+
+function buildLickPicker() {
+  lickPickerEl.innerHTML = '';
+  LICKS.forEach((lick, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'scale-lick-item' + (i === selectedLickIdx ? ' active' : '');
+    btn.textContent = lick.name;
+    btn.addEventListener('click', () => {
+      selectedLickIdx = i;
+      lickPickerEl.querySelectorAll('.scale-lick-item')
+        .forEach((b, j) => b.classList.toggle('active', j === i));
+    });
+    lickPickerEl.appendChild(btn);
+  });
+}
 
 const TECHNIQUE_SYMBOL = { bend: '↑', bendRelease: '↑↓', prebend: '↓', ho: 'h', po: 'p' };
 const DEGREE_NAMES = ['1','b2','2','b3','3','4','b5','5','b6','6','b7','7'];
@@ -575,7 +633,9 @@ playBtn.addEventListener('click', () => {
     resetPlayUI();
     return;
   }
-  currentPattern = generatePattern();
+  currentPattern = difficulty === 'licks'
+    ? lickToPattern(LICKS[selectedLickIdx])
+    : generatePattern();
   startPlay(currentPattern);
 });
 
@@ -594,7 +654,14 @@ loopBtn.addEventListener('click', () => {
 });
 
 newBtn.addEventListener('click', () => {
-  currentPattern = generatePattern();
+  if (difficulty === 'licks') {
+    selectedLickIdx = Math.floor(Math.random() * LICKS.length);
+    lickPickerEl.querySelectorAll('.scale-lick-item')
+      .forEach((b, j) => b.classList.toggle('active', j === selectedLickIdx));
+    currentPattern = lickToPattern(LICKS[selectedLickIdx]);
+  } else {
+    currentPattern = generatePattern();
+  }
   actionRow.style.display = 'none';
   startPlay(currentPattern);
 });
@@ -642,5 +709,9 @@ document.querySelectorAll('.scale-diff-btn').forEach(btn => {
     document.querySelectorAll('.scale-diff-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     difficulty = btn.dataset.diff;
+    const isLicks = difficulty === 'licks';
+    lickPickerEl.classList.toggle('visible', isLicks);
+    lenRowEl.style.display = isLicks ? 'none' : '';
+    if (isLicks) buildLickPicker();
   });
 });

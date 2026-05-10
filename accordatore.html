@@ -910,6 +910,11 @@
   .scale-note-pill.ho { border-color: #8cf; color: #8cf; background: rgba(136,204,255,0.1); text-shadow: none; }
   .scale-note-pill.po { border-color: #c8f; color: #c8f; background: rgba(204,136,255,0.1); text-shadow: none; }
   .scale-note-degree { font-size: 8px; vertical-align: super; margin-left: 2px; opacity: 0.75; }
+  .scale-lick-picker { display: none; flex-direction: column; gap: 4px; margin-bottom: 12px; max-height: 168px; overflow-y: auto; }
+  .scale-lick-picker.visible { display: flex; }
+  .scale-lick-item { font-family: var(--font); font-size: 11px; letter-spacing: 1px; padding: 6px 10px; background: transparent; border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--radius); cursor: pointer; text-align: left; transition: all 0.13s; -webkit-tap-highlight-color: transparent; }
+  .scale-lick-item.active { border-color: var(--green); color: var(--text); background: var(--green-glow); }
+  .scale-lick-item:active { background: var(--green-glow); }
   .scale-legend { margin-top: 14px; font-size: 12px; color: var(--fg-dim, #888); }
   .scale-legend summary { cursor: pointer; user-select: none; list-style: none; padding: 4px 0; }
   .scale-legend summary::-webkit-details-marker { display: none; }
@@ -926,7 +931,7 @@
   <button id="install-btn">Install</button>
   <button id="install-dismiss">✕</button>
 </div>
-<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v60</span></h1>
+<h1 id="splash-title">🎸 Guitar Tuner<span class="ver">v61</span></h1>
 
 <div class="tab-nav">
   <button class="tab-btn active" data-tab="tuner">Tuner</button>
@@ -1107,7 +1112,9 @@
       <button class="scale-diff-btn active" data-diff="easy">Easy</button>
       <button class="scale-diff-btn" data-diff="medium">Medium</button>
       <button class="scale-diff-btn" data-diff="hard">Hard</button>
+      <button class="scale-diff-btn" data-diff="licks">Licks</button>
     </div>
+    <div id="scale-lick-picker" class="scale-lick-picker"></div>
     <div class="scale-bpm-row">
       <span class="scale-bpm-lbl">BPM</span>
       <button class="scale-step-btn scale-bpm-step" data-delta="-5">−</button>
@@ -1115,7 +1122,7 @@
       <button class="scale-step-btn scale-bpm-step" data-delta="5">+</button>
       <span class="scale-bpm-val" id="scale-bpm-val">80</span>
     </div>
-    <div class="scale-bpm-row" style="margin-top:8px">
+    <div id="scale-len-row" class="scale-bpm-row" style="margin-top:8px">
       <span class="scale-bpm-lbl">Notes</span>
       <button class="scale-step-btn scale-len-step" data-delta="-1">−</button>
       <div style="flex:1;display:flex;align-items:center;justify-content:center;">
