@@ -61,6 +61,7 @@ let loopTimer = null;
 let playGen = 0;
 let scaleAudioCtx = null;
 let guitarWave = null; // PeriodicWave warm guitar-like per i bend
+let masterBus = null;  // shared output bus → dry + reverb send
 
 function ensureCtx() {
   if (!scaleAudioCtx) {
@@ -78,6 +79,35 @@ function ensureCtx() {
     imag[1] = 1.00; imag[2] = 0.50; imag[3] = 0.22;
     imag[4] = 0.09; imag[5] = 0.04; imag[6] = 0.02; imag[7] = 0.01;
     guitarWave = scaleAudioCtx.createPeriodicWave(real, imag, { disableNormalization: false });
+
+    // Master bus: dry → destination, + reverb send → convolver → destination
+    masterBus = scaleAudioCtx.createGain();
+    masterBus.gain.value = 1.0;
+    masterBus.connect(scaleAudioCtx.destination);
+
+    // Impulse response: small room (~1.2s, slightly warm/dark)
+    const sr = scaleAudioCtx.sampleRate;
+    const irLen = Math.ceil(sr * 1.2);
+    const ir = scaleAudioCtx.createBuffer(2, irLen, sr);
+    for (let c = 0; c < 2; c++) {
+      const d = ir.getChannelData(c);
+      const pre = Math.floor(sr * 0.015); // 15ms pre-delay
+      for (let i = pre; i < irLen; i++) {
+        const t = (i - pre) / (irLen - pre);
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 1.8);
+      }
+      // One-pole LP per scurire la coda (rimuove l'harshness digitale)
+      let z = 0;
+      for (let i = 0; i < irLen; i++) z = d[i] = z * 0.35 + d[i] * 0.65;
+      if (c === 1) for (let i = 0; i < irLen; i++) d[i] *= 0.88; // larghezza stereo
+    }
+    const convolver = scaleAudioCtx.createConvolver();
+    convolver.buffer = ir;
+    const reverbSend = scaleAudioCtx.createGain();
+    reverbSend.gain.value = 0.25;
+    masterBus.connect(reverbSend);
+    reverbSend.connect(convolver);
+    convolver.connect(scaleAudioCtx.destination);
   }
   if (scaleAudioCtx.state === 'suspended') scaleAudioCtx.resume();
 }
@@ -260,7 +290,7 @@ function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(amplitude, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
+  src.connect(lp); lp.connect(gain); gain.connect(masterBus);
   src.start(t);
   src.stop(t + decay + 0.05);
 }
@@ -281,7 +311,7 @@ function pluckHO(ctx, freq, beatMult = 1) {
   gain.gain.setValueAtTime(0, t);
   gain.gain.linearRampToValueAtTime(0.42, t + 0.022);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
+  src.connect(lp); lp.connect(gain); gain.connect(masterBus);
   src.start(t);
   src.stop(t + decay + 0.05);
 }
@@ -308,7 +338,7 @@ function pluckPO(ctx, freq, beatMult = 1) {
   gain.gain.setValueAtTime(0.65, t);
   gain.gain.exponentialRampToValueAtTime(0.42, t + 0.008);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  src.connect(lp); lp.connect(gain); gain.connect(ctx.destination);
+  src.connect(lp); lp.connect(gain); gain.connect(masterBus);
   src.start(t);
   src.stop(t + decay + 0.05);
 }
@@ -328,7 +358,7 @@ function buildBendChain(ctx, osc, freq, t, decay) {
   const nGain = ctx.createGain();
   nGain.gain.setValueAtTime(0.14, t); // era 0.22: più morbido
   nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.016);
-  nSrc.connect(nGain); nGain.connect(ctx.destination);
+  nSrc.connect(nGain); nGain.connect(masterBus);
   nSrc.start(t);
 
   // Filtro passa-basso: parte più caldo (freq * 5.5 vs 8), scende a freq * 1.8
@@ -350,7 +380,7 @@ function buildBendChain(ctx, osc, freq, t, decay) {
   gain.gain.linearRampToValueAtTime(0.44, t + 0.015); // attacco più morbido (era 0.009)
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
 
-  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(ctx.destination);
+  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(masterBus);
   return gain;
 }
 
@@ -439,7 +469,7 @@ function playPrebend(ctx, freq, beatMult = 1, semitones = 2) {
   gain.gain.setValueAtTime(0.30, t); // niente attacco: corda già vibrante
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
 
-  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(ctx.destination);
+  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(masterBus);
   osc.start(t);
   osc.stop(t + decay + 0.05);
 }
@@ -457,7 +487,7 @@ function mute(ctx) {
   const gain = ctx.createGain();
   gain.gain.setValueAtTime(0.5, t);
   src.connect(gain);
-  gain.connect(ctx.destination);
+  gain.connect(masterBus);
   src.start(t);
   src.stop(t + 0.08);
 }
