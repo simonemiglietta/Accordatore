@@ -154,7 +154,7 @@ function generatePattern() {
     return result;
   }
 
-  // Medium / Hard: riempie patternLen beat con note (1 o 2 beat) e muting (15%)
+  // Medium / Hard: riempie patternLen beat con note (0.5/1/2 beat) e muting (15%)
   const result = [{ ...cur, duration: 1, muted: false, technique: null, bendSemitones: null }];
   let remaining = patternLen - 1;
   let lastTechnique = null;
@@ -162,8 +162,9 @@ function generatePattern() {
 
   while (remaining > 0) {
     if (Math.random() < 0.15) {
-      result.push({ ...cur, label: '×', duration: 1, muted: true, technique: null, bendSemitones: null });
-      remaining -= 1;
+      const muteDur = (remaining >= 0.5 && Math.random() < 0.35) ? 0.5 : 1;
+      result.push({ ...cur, label: '×', duration: muteDur, muted: true, technique: null, bendSemitones: null });
+      remaining -= muteDur;
       lastTechnique = null;
     } else {
       const w = pool.map(n => (STABILITY[n.interval] ?? 1) * spreadWeight(Math.abs(n.midi - cur.midi)));
@@ -182,32 +183,35 @@ function generatePattern() {
           technique = semiDist > 0 ? 'ho' : 'po';
           fromLabel = prev.label;
           const longProb = technique === 'po' ? 0.42 : 0.28;
-          duration = (remaining >= 2 && Math.random() < longProb) ? 2 : 1;
+          if (remaining >= 2 && Math.random() < longProb) duration = 2;
+          else if (remaining >= 0.5 && Math.random() < 0.35) duration = 0.5;
+          else duration = 1;
         } else if (Math.random() < 0.22) {
-          // famiglia dei bend
+          // famiglia dei bend — mai su crome (il gesto ha bisogno di tempo)
           bendSemitones = Math.random() < 0.45 ? 1 : 2;
 
           if (lastTechnique === 'bend' && remaining >= 1 && Math.random() < 0.55) {
-            // Gesto connesso: bend precedente → ora rilascio (prebend-release)
             technique = 'prebend';
             bendSemitones = lastBendSemitones;
             duration = 1;
           } else if (remaining >= 2 && Math.random() < 0.38) {
-            // Bend + release in un unico gesto a 2 beat
             technique = 'bendRelease';
             duration = 2;
           } else {
-            // Bend ascendente semplice (1 o 2 beat)
             technique = 'bend';
             duration = (remaining >= 2 && Math.random() < 0.32) ? 2 : 1;
           }
 
           lastBendSemitones = bendSemitones;
         } else {
-          duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
+          if (remaining >= 2 && Math.random() < 0.20) duration = 2;
+          else if (remaining >= 0.5 && Math.random() < 0.35) duration = 0.5;
+          else duration = 1;
         }
       } else {
-        duration = (remaining >= 2 && Math.random() < 0.25) ? 2 : 1;
+        if (remaining >= 2 && Math.random() < 0.20) duration = 2;
+        else if (remaining >= 0.5 && Math.random() < 0.35) duration = 0.5;
+        else duration = 1;
       }
 
       lastTechnique = technique;
