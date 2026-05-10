@@ -39,10 +39,13 @@ setTimeout(() => {
   if (t) t.classList.add('hidden');
 }, 1500);
 
-// PWA service worker
+// PWA service worker — auto-reload quando un nuovo SW prende il controllo
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    window.location.reload();
   });
 }
 
