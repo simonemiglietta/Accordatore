@@ -73,7 +73,6 @@ let loopActive = false;
 let loopTimer = null;
 let playGen = 0;
 let scaleAudioCtx = null;
-let guitarWave = null; // PeriodicWave warm guitar-like per i bend
 let masterBus = null;  // shared output bus → dry + reverb send
 
 function ensureCtx() {
@@ -84,15 +83,6 @@ function ensureCtx() {
     src.buffer = silent;
     src.connect(scaleAudioCtx.destination);
     src.start(0);
-
-    // Armonici chitarra elettrica — serie più completa per timbro più ricco
-    const N = 16;
-    const real = new Float32Array(N);
-    const imag = new Float32Array(N);
-    imag[1]=1.00; imag[2]=0.45; imag[3]=0.20; imag[4]=0.09;
-    imag[5]=0.05; imag[6]=0.03; imag[7]=0.02; imag[8]=0.012;
-    imag[9]=0.008; imag[10]=0.005; imag[11]=0.004; imag[12]=0.003;
-    guitarWave = scaleAudioCtx.createPeriodicWave(real, imag, { disableNormalization: false });
 
     // Master bus: dry → destination, + reverb send → convolver → destination
     masterBus = scaleAudioCtx.createGain();
@@ -286,19 +276,19 @@ function ksBuffer(ctx, freq, beatMult, fillFn) {
   return { buf, decay };
 }
 
+function guitarFill(d, period) {
+  for (let i = 0; i < period; i++) {
+    const p = i / period;
+    d[i] = Math.sin(Math.PI * p) * 0.52
+          + Math.sin(2 * Math.PI * p) * 0.30
+          + Math.sin(3 * Math.PI * p) * 0.12
+          + (Math.random() * 2 - 1) * Math.exp(-p * 10) * 0.36;
+  }
+}
+
 // Pluck: due voci detuned di 4 cents → battimento naturale da corda reale
 function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
-  const fillFn = (d, period) => {
-    for (let i = 0; i < period; i++) {
-      const p = i / period;
-      const warm = Math.sin(Math.PI * p) * 0.52;
-      const h2   = Math.sin(2 * Math.PI * p) * 0.30;
-      const h3   = Math.sin(3 * Math.PI * p) * 0.12;
-      const atk  = (Math.random() * 2 - 1) * Math.exp(-p * 10) * 0.36; // noise concentrato all'attacco
-      d[i] = warm + h2 + h3 + atk;
-    }
-  };
-  const { buf, decay } = ksBuffer(ctx, freq, beatMult, fillFn);
+  const { buf, decay } = ksBuffer(ctx, freq, beatMult, guitarFill);
   const t = ctx.currentTime + 0.005;
 
   const src1 = ctx.createBufferSource();
@@ -377,63 +367,38 @@ function pluckPO(ctx, freq, beatMult = 1) {
   src.stop(t + decay + 0.05);
 }
 
-// Shared bend filter chain builder
-function buildBendChain(ctx, osc, freq, t, decay) {
-  // Usa la PeriodicWave warm se disponibile
-  if (guitarWave) osc.setPeriodicWave(guitarWave);
-  else osc.type = 'sawtooth';
-
-  // Transiente di pick: leggero (corda già tesa = meno click)
-  const nBuf = ctx.createBuffer(1, Math.ceil(ctx.sampleRate * 0.016), ctx.sampleRate);
-  const nd = nBuf.getChannelData(0);
-  for (let i = 0; i < nd.length; i++) nd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / nd.length, 4);
-  const nSrc = ctx.createBufferSource();
-  nSrc.buffer = nBuf;
-  const nGain = ctx.createGain();
-  nGain.gain.setValueAtTime(0.26, t);
-  nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.016);
-  nSrc.connect(nGain); nGain.connect(masterBus);
-  nSrc.start(t);
-
-  // Filtro passa-basso: parte brillante (freq * 8), poi si scalda
+function bendChain(ctx, src, freq, t, decay, gain0 = 0.65) {
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(freq * 8, t);
-  lp.frequency.exponentialRampToValueAtTime(freq * 1.8, t + decay * 0.5);
-  lp.Q.value = 0.7;
-
-  // Corpo chitarra: leggermente ridotto
+  lp.frequency.value = Math.min(freq * 12, 7500);
+  lp.Q.value = 0.5;
   const body = ctx.createBiquadFilter();
   body.type = 'peaking';
-  body.frequency.value = Math.max(200, freq * 1.5);
-  body.Q.value = 1.5;
-  body.gain.value = 5; // era 7
-
+  body.frequency.value = Math.min(Math.max(freq * 1.6, 180), 260);
+  body.Q.value = 2.2;
+  body.gain.value = 6;
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0, t);
-  gain.gain.linearRampToValueAtTime(0.44, t + 0.015); // attacco più morbido (era 0.009)
+  gain.gain.setValueAtTime(gain0, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-
-  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(masterBus);
-  return gain;
+  src.connect(lp); lp.connect(body); body.connect(gain); gain.connect(masterBus);
 }
 
-// Bend ascendente: freq → freq+semitones. Vibrato automatico sui beat lunghi.
+// Bend ascendente: playbackRate 1→targetRate. Vibrato automatico sui beat lunghi.
 function playBend(ctx, freq, beatMult = 1, semitones = 2) {
   const t = ctx.currentTime + 0.005;
   const beatDur = 60 / scaleBpm;
   const decay = Math.min(beatDur * 1.2 * beatMult, 2.5);
-  const targetFreq = freq * Math.pow(2, semitones / 12);
-  const bendDur = beatMult >= 2 ? beatDur * 0.75 : Math.min(decay * 0.5, 0.5);
-  const bendEnd = t + bendDur;
+  const { buf } = ksBuffer(ctx, freq, beatMult, guitarFill);
+  const targetRate = Math.pow(2, semitones / 12);
+  const bendDur = beatMult >= 2 ? beatDur * 0.75 : Math.min(decay * 0.5, 0.45);
 
-  const osc = ctx.createOscillator();
-  osc.frequency.setValueAtTime(freq, t);
-  osc.frequency.exponentialRampToValueAtTime(targetFreq, bendEnd);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.setValueAtTime(1.0, t);
+  src.playbackRate.exponentialRampToValueAtTime(targetRate, t + bendDur);
 
-  // Vibrato dopo il bend per note lunghe
   if (beatMult >= 2 && decay > 1.0) {
-    const vStart = bendEnd + 0.12;
+    const vStart = t + bendDur + 0.12;
     const vEnd = t + decay * 0.88;
     const vLen = vEnd - vStart;
     if (vLen > 0.25) {
@@ -442,70 +407,57 @@ function playBend(ctx, freq, beatMult = 1, semitones = 2) {
       const curve = new Float32Array(N);
       for (let i = 0; i < N; i++) {
         const env = Math.min(1, i / (N * 0.28));
-        curve[i] = targetFreq * (1 + vDepth * env * Math.sin(2 * Math.PI * i * vHz / (N / vLen)));
+        curve[i] = targetRate * (1 + vDepth * env * Math.sin(2 * Math.PI * i * vHz / (N / vLen)));
       }
-      osc.frequency.setValueCurveAtTime(curve, vStart, vLen);
+      src.playbackRate.setValueCurveAtTime(curve, vStart, vLen);
     }
   }
 
-  buildBendChain(ctx, osc, freq, t, decay);
-  osc.start(t);
-  osc.stop(t + decay + 0.05);
+  bendChain(ctx, src, freq, t, decay);
+  src.start(t);
+  src.stop(t + decay + 0.05);
 }
 
-// Bend-release: sale verso targetFreq nel primo beat, poi ridiscende alla nota base
+// Bend-release: sale verso targetRate poi ridiscende a 1.0
 function playBendRelease(ctx, freq, beatMult = 2, semitones = 2) {
   const t = ctx.currentTime + 0.005;
   const beatDur = 60 / scaleBpm;
   const decay = Math.min(beatDur * 1.2 * beatMult, 2.5);
-  const targetFreq = freq * Math.pow(2, semitones / 12);
+  const { buf } = ksBuffer(ctx, freq, beatMult, guitarFill);
+  const targetRate = Math.pow(2, semitones / 12);
   const upEnd   = t + beatDur * 0.72;
   const holdEnd = upEnd + 0.06;
   const downEnd = t + beatDur * 1.55;
 
-  const osc = ctx.createOscillator();
-  osc.frequency.setValueAtTime(freq, t);
-  osc.frequency.exponentialRampToValueAtTime(targetFreq, upEnd);
-  osc.frequency.setValueAtTime(targetFreq, holdEnd);
-  osc.frequency.exponentialRampToValueAtTime(freq, downEnd);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.setValueAtTime(1.0, t);
+  src.playbackRate.exponentialRampToValueAtTime(targetRate, upEnd);
+  src.playbackRate.setValueAtTime(targetRate, holdEnd);
+  src.playbackRate.exponentialRampToValueAtTime(1.0, downEnd);
 
-  buildBendChain(ctx, osc, freq, t, decay);
-  osc.start(t);
-  osc.stop(t + decay + 0.05);
+  bendChain(ctx, src, freq, t, decay);
+  src.start(t);
+  src.stop(t + decay + 0.05);
 }
 
-// Prebend-release: corda già in bend, rilascia verso il basso. Nessun transiente di pick.
+// Prebend-release: corda già in bend (startRate), rilascia a 1.0. Nessun attacco.
 function playPrebend(ctx, freq, beatMult = 1, semitones = 2) {
   const t = ctx.currentTime + 0.005;
   const beatDur = 60 / scaleBpm;
   const decay = Math.min(beatDur * 1.2 * beatMult, 2.5);
-  const startFreq = freq * Math.pow(2, semitones / 12);
+  const { buf } = ksBuffer(ctx, freq, beatMult, guitarFill);
+  const startRate = Math.pow(2, semitones / 12);
   const releaseEnd = t + Math.min(beatDur * 0.6, 0.55);
 
-  const osc = ctx.createOscillator();
-  if (guitarWave) osc.setPeriodicWave(guitarWave); else osc.type = 'sawtooth';
-  osc.frequency.setValueAtTime(startFreq, t);
-  osc.frequency.exponentialRampToValueAtTime(freq, releaseEnd);
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.playbackRate.setValueAtTime(startRate, t);
+  src.playbackRate.exponentialRampToValueAtTime(1.0, releaseEnd);
 
-  const lp = ctx.createBiquadFilter();
-  lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(freq * 3.5, t); // corda già in bend: scuro
-  lp.frequency.exponentialRampToValueAtTime(freq * 1.7, t + decay * 0.5);
-  lp.Q.value = 0.7;
-
-  const body = ctx.createBiquadFilter();
-  body.type = 'peaking';
-  body.frequency.value = Math.max(200, freq * 1.5);
-  body.Q.value = 1.5;
-  body.gain.value = 5;
-
-  const gain = ctx.createGain();
-  gain.gain.setValueAtTime(0.30, t); // niente attacco: corda già vibrante
-  gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-
-  osc.connect(lp); lp.connect(body); body.connect(gain); gain.connect(masterBus);
-  osc.start(t);
-  osc.stop(t + decay + 0.05);
+  bendChain(ctx, src, freq, t, decay, 0.30);
+  src.start(t);
+  src.stop(t + decay + 0.05);
 }
 
 // Rumore impulsivo per simulare palm mute / nota smorzata
