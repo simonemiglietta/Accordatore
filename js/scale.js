@@ -8,23 +8,23 @@ const SCALES = {
 };
 
 // ── Lick library ─────────────────────────────────
-// s = semitones from root · d = beats · t = technique · bs = bendSemitones
+// s = semitones from root · d = beats (0.5=croma, 1=quarto, 2=metà) · t = technique · bs = bendSemitones
 const LICKS = [
-  { name: "Pentatonic Descent",    notes: [{s:12},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Blues Ascent",          notes: [{s:0},{s:3},{s:5},{s:7},{s:10},{s:12,d:2}] },
-  { name: "BB King Bend",          notes: [{s:10},{s:7,d:2,t:'bend',bs:2},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Slow Blues",            notes: [{s:12,d:2,t:'bend',bs:2},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Hendrix Curl",          notes: [{s:7,d:2,t:'bend',bs:1},{s:5},{s:3},{s:0},{s:3},{s:0,d:2}] },
-  { name: "Bend & Release",        notes: [{s:7,d:2,t:'bendRelease',bs:2},{s:5},{s:3},{s:5},{s:0,d:2}] },
-  { name: "Clapton Run",           notes: [{s:12},{s:10},{s:12},{s:10},{s:7},{s:10},{s:7,d:2}] },
-  { name: "Hammer-on Run",         notes: [{s:0},{s:3,t:'ho'},{s:5},{s:7},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Pull-off Lick",         notes: [{s:12},{s:10},{s:7,t:'po'},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Classic Resolution",    notes: [{s:5},{s:3},{s:5},{s:3,d:2},{s:0,d:2}] },
-  { name: "Albert King",           notes: [{s:10},{s:12,d:2,t:'bend',bs:2},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Page Style",            notes: [{s:0},{s:3},{s:5},{s:7},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Double Pentatonic",     notes: [{s:0},{s:3},{s:5},{s:7},{s:10},{s:12},{s:10},{s:7},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Root Bounce",           notes: [{s:0},{s:3},{s:0},{s:3},{s:5},{s:7},{s:5},{s:3},{s:0,d:2}] },
-  { name: "Vibrato High",          notes: [{s:12,d:2,t:'bend',bs:1},{s:10},{s:12,d:2,t:'bend',bs:2},{s:10},{s:7},{s:5},{s:0,d:2}] },
+  { name: "Pentatonic Descent",  notes: [{s:12,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Blues Ascent",        notes: [{s:0,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:7,d:0.5},{s:10,d:0.5},{s:12,d:1}] },
+  { name: "BB King Bend",        notes: [{s:10,d:0.5},{s:12,d:1.5,t:'bend',bs:2},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Slow Blues",          notes: [{s:12,d:2,t:'bend',bs:2},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Hendrix Curl",        notes: [{s:7,d:1.5,t:'bend',bs:1},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Bend & Release",      notes: [{s:7,d:2,t:'bendRelease',bs:2},{s:5,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:0,d:1}] },
+  { name: "Clapton Run",         notes: [{s:12,d:0.5},{s:10,d:0.5},{s:12,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:10,d:0.5},{s:7,d:1}] },
+  { name: "Hammer-on Run",       notes: [{s:0,d:0.5},{s:3,d:0.5,t:'ho'},{s:5,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Pull-off Lick",       notes: [{s:12,d:0.5},{s:10,d:0.5},{s:7,d:0.5,t:'po'},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Classic Resolution",  notes: [{s:5,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:3,d:1.5},{s:0,d:1}] },
+  { name: "Albert King",         notes: [{s:10,d:0.5},{s:12,d:1.5,t:'bend',bs:2},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Page Style",          notes: [{s:0,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:7,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Double Pentatonic",   notes: [{s:0,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:7,d:0.5},{s:10,d:0.5},{s:12,d:0.5},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Root Bounce",         notes: [{s:0,d:0.5},{s:3,d:0.5},{s:0,d:0.5},{s:3,d:0.5},{s:5,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
+  { name: "Vibrato High",        notes: [{s:12,d:1.5,t:'bend',bs:1},{s:10,d:0.5},{s:12,d:1.5,t:'bend',bs:2},{s:10,d:0.5},{s:7,d:0.5},{s:5,d:0.5},{s:0,d:1}] },
 ];
 
 function lickToPattern(lick) {
@@ -529,10 +529,11 @@ function renderDots(pattern, activeIdx = -1) {
   pattern.forEach((note, i) => {
     const d = document.createElement('div');
     let cls = 'scale-dot';
-    if (i === activeIdx) cls += ' active';
-    if (note.muted)          cls += ' muted';
-    if (note.duration === 2) cls += ' long';
-    if (note.technique)      cls += ' ' + note.technique;
+    if (i === activeIdx)      cls += ' active';
+    if (note.muted)           cls += ' muted';
+    if (note.duration < 1)    cls += ' short';
+    if (note.duration >= 2)   cls += ' long';
+    if (note.technique)       cls += ' ' + note.technique;
     d.className = cls;
     if (note.muted)          d.textContent = '×';
     else if (note.technique) d.textContent = TECHNIQUE_SYMBOL[note.technique] ?? '';
