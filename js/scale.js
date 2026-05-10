@@ -227,7 +227,7 @@ function generatePattern() {
 function ksBuffer(ctx, freq, beatMult, fillFn) {
   const sr = ctx.sampleRate;
   const period = Math.max(2, Math.round(sr / freq));
-  const decay = Math.min(60 / scaleBpm * 2 * beatMult, 3.5);
+  const decay = Math.min(60 / scaleBpm * 1.2 * beatMult, 2.5);
   const bufLen = Math.ceil(sr * decay);
   const buf = ctx.createBuffer(1, bufLen, sr);
   const d = buf.getChannelData(0);
@@ -358,7 +358,7 @@ function buildBendChain(ctx, osc, freq, t, decay) {
 function playBend(ctx, freq, beatMult = 1, semitones = 2) {
   const t = ctx.currentTime + 0.005;
   const beatDur = 60 / scaleBpm;
-  const decay = Math.min(beatDur * 2 * beatMult, 3.5);
+  const decay = Math.min(beatDur * 1.2 * beatMult, 2.5);
   const targetFreq = freq * Math.pow(2, semitones / 12);
   const bendDur = beatMult >= 2 ? beatDur * 0.75 : Math.min(decay * 0.5, 0.5);
   const bendEnd = t + bendDur;
@@ -393,7 +393,7 @@ function playBend(ctx, freq, beatMult = 1, semitones = 2) {
 function playBendRelease(ctx, freq, beatMult = 2, semitones = 2) {
   const t = ctx.currentTime + 0.005;
   const beatDur = 60 / scaleBpm;
-  const decay = Math.min(beatDur * 2 * beatMult, 3.5);
+  const decay = Math.min(beatDur * 1.2 * beatMult, 2.5);
   const targetFreq = freq * Math.pow(2, semitones / 12);
   const upEnd   = t + beatDur * 0.72;
   const holdEnd = upEnd + 0.06;
@@ -414,7 +414,7 @@ function playBendRelease(ctx, freq, beatMult = 2, semitones = 2) {
 function playPrebend(ctx, freq, beatMult = 1, semitones = 2) {
   const t = ctx.currentTime + 0.005;
   const beatDur = 60 / scaleBpm;
-  const decay = Math.min(beatDur * 2 * beatMult, 3.5);
+  const decay = Math.min(beatDur * 1.2 * beatMult, 2.5);
   const startFreq = freq * Math.pow(2, semitones / 12);
   const releaseEnd = t + Math.min(beatDur * 0.6, 0.55);
 
