@@ -33,7 +33,7 @@ const LICKS = [
   { name: "High Scream",         notes: [{s:15,d:0.5},{s:14,d:0.5},{s:12,d:0.5},{s:10,d:0.5},{s:12,d:1.5,t:'bend',bs:2},{s:10,d:0.5},{s:7,d:0.5},{s:0,d:1}] },
   { name: "Gary Moore",          notes: [{s:12,d:2,t:'bend',bs:2},{s:10,d:1},{s:7,d:2,t:'bendRelease',bs:2},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
   { name: "Chromatic Approach",  notes: [{s:0,d:0.5},{s:3,d:0.5},{s:4,d:0.5},{s:5,d:1},{s:7,d:0.5},{s:5,d:0.5},{s:3,d:0.5},{s:0,d:1}] },
-  { name: "Boom Like That",      notes: [{s:7,d:0.333},{s:4,d:0.333,t:'po'},{s:0,d:0.333},{s:2,d:0.333,t:'ho'},{s:-5,d:0.333},{s:-3,d:0.333,t:'ho'},{s:-5,d:0.5,t:'po'},{s:-8,d:0.5},{s:-10,d:1,t:'po'}] },
+  { name: "Boom Like That",      notes: [{s:7,d:0.333},{s:4,d:0.333,t:'po'},{s:0,d:0.333},{s:2,d:0.167,t:'ho'},{s:-5,d:0.167},{s:-3,d:0.167,t:'ho'},{s:-5,d:0.167,t:'po'},{s:-8,d:0.167},{s:-10,d:0.167,t:'po'}] },
 ];
 
 function lickToPattern(lick) {
