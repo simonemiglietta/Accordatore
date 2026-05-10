@@ -320,7 +320,8 @@ async function looperRec() {
   }
 }
 
-async function looperPlay() {
+async function looperPlay(startOffset = 0) {
+  const offset = typeof startOffset === 'number' ? startOffset : 0;
   if (!loopStretchedBuffer || loopState === "recording" || loopState === "counting-in" || loopState === "stopping") return;
   if (loopState === "playing") { looperStop(); return; }
 
@@ -344,9 +345,9 @@ async function looperPlay() {
   loopSource.buffer = loopStretchedBuffer;
   loopSource.loop = true;
   loopSource.connect(loopGain);
-  loopSource.start();
+  loopSource.start(0, offset);
   acquireWakeLock();
-  loopStartTime = loopAudioCtx.currentTime;
+  loopStartTime = loopAudioCtx.currentTime - offset;
   loopDuration = loopStretchedBuffer.duration;
   loopState = "playing";
   looperStatus.textContent = `▶ Loop — ${Math.round(loopSpeed*100)}%`;
@@ -487,9 +488,26 @@ async function loopImport(file) {
   }
 }
 
+function seekTo(fraction) {
+  if (!loopStretchedBuffer) return;
+  const offset = Math.max(0, Math.min(1, fraction)) * loopStretchedBuffer.duration;
+  if (loopState === "playing") {
+    if (loopSource) { try { loopSource.stop(); } catch(e) {} loopSource = null; }
+    loopSource = loopAudioCtx.createBufferSource();
+    loopSource.buffer = loopStretchedBuffer;
+    loopSource.loop = true;
+    loopSource.connect(loopGain);
+    loopSource.start(0, offset);
+    loopStartTime = loopAudioCtx.currentTime - offset;
+  } else if (loopState === "idle") {
+    looperPlay(offset);
+  }
+}
+
 function drawWaveform(buffer) {
   const w = loopCanvas.offsetWidth || 300, h = 60;
   loopCanvas.width = w; loopCanvas.height = h;
+  loopCanvas.style.cursor = buffer ? 'pointer' : 'default';
   waveformCtx.fillStyle = "#050a03"; waveformCtx.fillRect(0, 0, w, h);
   if (!buffer) {
     waveformCtx.strokeStyle = "#1a7a0a"; waveformCtx.lineWidth = 1;
@@ -543,6 +561,11 @@ loopCdownToggle.addEventListener('click', () => {
   countdownEnabled = !countdownEnabled;
   loopCdownToggle.classList.toggle("active", countdownEnabled);
   loopCdownToggle.textContent = countdownEnabled ? "●" : "○";
+});
+
+loopCanvas.addEventListener('click', e => {
+  if (!loopStretchedBuffer) return;
+  seekTo(e.offsetX / loopCanvas.offsetWidth);
 });
 
 lbtnExport.addEventListener('click', loopExport);
