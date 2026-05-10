@@ -72,12 +72,13 @@ function ensureCtx() {
     src.connect(scaleAudioCtx.destination);
     src.start(0);
 
-    // Armonici di una chitarra elettrica con pickup al manico (warm, round)
-    const N = 10;
+    // Armonici chitarra elettrica — serie più completa per timbro più ricco
+    const N = 16;
     const real = new Float32Array(N);
     const imag = new Float32Array(N);
-    imag[1] = 1.00; imag[2] = 0.50; imag[3] = 0.22;
-    imag[4] = 0.09; imag[5] = 0.04; imag[6] = 0.02; imag[7] = 0.01;
+    imag[1]=1.00; imag[2]=0.45; imag[3]=0.20; imag[4]=0.09;
+    imag[5]=0.05; imag[6]=0.03; imag[7]=0.02; imag[8]=0.012;
+    imag[9]=0.008; imag[10]=0.005; imag[11]=0.004; imag[12]=0.003;
     guitarWave = scaleAudioCtx.createPeriodicWave(real, imag, { disableNormalization: false });
 
     // Master bus: dry → destination, + reverb send → convolver → destination
@@ -270,29 +271,47 @@ function ksBuffer(ctx, freq, beatMult, fillFn) {
   return { buf, decay };
 }
 
-// Pluck: plettro morbido verso il manico — caldo, arrotondato
+// Pluck: due voci detuned di 4 cents → battimento naturale da corda reale
 function pluck(ctx, freq, beatMult = 1, amplitude = 0.8) {
-  const { buf, decay } = ksBuffer(ctx, freq, beatMult, (d, period) => {
+  const fillFn = (d, period) => {
     for (let i = 0; i < period; i++) {
       const p = i / period;
-      const warm  = Math.sin(Math.PI * p);                        // mezza sinusoide: rotonda
-      const click = p < 0.32 ? p / 0.32 : -(p - 0.32) / 0.68;  // lieve brillantezza del plettro
-      d[i] = warm * 0.65 + click * 0.2 + (Math.random() * 2 - 1) * 0.15;
+      const warm = Math.sin(Math.PI * p) * 0.52;
+      const h2   = Math.sin(2 * Math.PI * p) * 0.30;
+      const h3   = Math.sin(3 * Math.PI * p) * 0.12;
+      const atk  = (Math.random() * 2 - 1) * Math.exp(-p * 10) * 0.36; // noise concentrato all'attacco
+      d[i] = warm + h2 + h3 + atk;
     }
-  });
+  };
+  const { buf, decay } = ksBuffer(ctx, freq, beatMult, fillFn);
   const t = ctx.currentTime + 0.005;
-  const src = ctx.createBufferSource();
-  src.buffer = buf;
+
+  const src1 = ctx.createBufferSource();
+  src1.buffer = buf;
+  const src2 = ctx.createBufferSource();
+  src2.buffer = buf;
+  src2.detune.value = 4; // 4 cents → leggero chorus/battimento da corda
+
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.value = Math.min(freq * 13, 8000);
+  lp.frequency.value = Math.min(freq * 12, 7500);
   lp.Q.value = 0.5;
+
+  // Risonanza corpo chitarra
+  const body = ctx.createBiquadFilter();
+  body.type = 'peaking';
+  body.frequency.value = Math.min(Math.max(freq * 1.6, 180), 260);
+  body.Q.value = 2.2;
+  body.gain.value = 6;
+
   const gain = ctx.createGain();
-  gain.gain.setValueAtTime(amplitude, t);
+  gain.gain.setValueAtTime(amplitude * 0.50, t);
   gain.gain.exponentialRampToValueAtTime(0.001, t + decay);
-  src.connect(lp); lp.connect(gain); gain.connect(masterBus);
-  src.start(t);
-  src.stop(t + decay + 0.05);
+
+  src1.connect(lp); src2.connect(lp);
+  lp.connect(body); body.connect(gain); gain.connect(masterBus);
+  src1.start(t);         src1.stop(t + decay + 0.05);
+  src2.start(t + 0.001); src2.stop(t + decay + 0.05);
 }
 
 // Hammer-on: eccitazione sinusoidale liscia, attacco lento (nessun transiente di plettro)
@@ -356,15 +375,15 @@ function buildBendChain(ctx, osc, freq, t, decay) {
   const nSrc = ctx.createBufferSource();
   nSrc.buffer = nBuf;
   const nGain = ctx.createGain();
-  nGain.gain.setValueAtTime(0.14, t); // era 0.22: più morbido
+  nGain.gain.setValueAtTime(0.26, t);
   nGain.gain.exponentialRampToValueAtTime(0.001, t + 0.016);
   nSrc.connect(nGain); nGain.connect(masterBus);
   nSrc.start(t);
 
-  // Filtro passa-basso: parte più caldo (freq * 5.5 vs 8), scende a freq * 1.8
+  // Filtro passa-basso: parte brillante (freq * 8), poi si scalda
   const lp = ctx.createBiquadFilter();
   lp.type = 'lowpass';
-  lp.frequency.setValueAtTime(freq * 5.5, t);
+  lp.frequency.setValueAtTime(freq * 8, t);
   lp.frequency.exponentialRampToValueAtTime(freq * 1.8, t + decay * 0.5);
   lp.Q.value = 0.7;
 
